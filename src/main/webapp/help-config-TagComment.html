@@ -1,0 +1,12 @@
+<div>
+    This value is used as svn commit message.
+    You can embed the following variables with <a href="http://groovy.codehaus.org/JN1525-Strings">groovy string format</a>.
+    <dl>
+        <dt>env</dt><dd>Map returned by <tt>hudson.model.AbstractBuild.getEnvVar()</tt>.</dd>
+        <dt>sys</dt><dd>Properties returned by <tt>System.getProperties()</tt>.</dd>
+    </dl>
+    For example, you can embed <tt>BUILD_TAG</tt> in the comment.
+    <pre>
+        Tagged by svn-tag plugin. Build: ${env['BUILD_TAG']}
+    </pre>
+</div>
