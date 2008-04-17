@@ -6,6 +6,10 @@
     <version>1.208</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
+  <artifactId>svn-tag</artifactId>
+  <name>Hudson Subversion Tagging Plug-in</name>
+  <packaging>hpi</packaging>
+  <version>1.0-SNAPSHOT</version>
   <developers>
     <developer>
       <name>Kenji Nakamura</name>
@@ -17,10 +21,6 @@
       <timezone>-8</timezone>
     </developer>
   </developers>
-  <artifactId>svn-tag</artifactId>
-  <name>Hudson Subversion Tagging Plug-in</name>
-  <packaging>hpi</packaging>
-  <version>1.0</version>
   <dependencies>
     <dependency>
       <groupId>dom4j</groupId>
