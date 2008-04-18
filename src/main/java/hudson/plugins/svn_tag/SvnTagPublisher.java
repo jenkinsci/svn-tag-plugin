@@ -13,11 +13,10 @@ import static hudson.plugins.svn_tag.SvnTagPlugin.DESCRIPTION;
 import hudson.tasks.Publisher;
 import hudson.util.FormFieldValidator;
 import net.sf.json.JSONObject;
-import org.kohsuke.stapler.DataBoundConstructor;
+import org.codehaus.groovy.control.CompilationFailedException;
+import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
 import org.kohsuke.stapler.StaplerResponse;
-import org.kohsuke.stapler.QueryParameter;
-import org.codehaus.groovy.control.CompilationFailedException;
 
 
 /**
@@ -39,24 +38,9 @@ public class SvnTagPublisher extends Publisher {
     /**
      * tag base URL
      */
-    private String tagBaseURL;
+    private String tagBaseURL = null;
 
-    private String tagComment;
-
-    public SvnTagPublisher() {
-
-    }
-
-//    /**
-//     * Data bound constructor of which the parameters are populated by Stapler's
-//     * data binding.
-//     *
-//     * @param tagBaseURL tag base url
-//     */
-//    @DataBoundConstructor
-//    public SvnTagPublisher(String tagBaseURL) {
-//        this.tagBaseURL = tagBaseURL;
-//    }
+    private String tagComment = null;
 
     /**
      * Returns the tag base URL value.
@@ -76,7 +60,7 @@ public class SvnTagPublisher extends Publisher {
     }
 
     public String getTagComment() {
-        if((this.tagComment == null) || (this.tagComment.length() == 0)) {
+        if ((this.tagComment == null) || (this.tagComment.length() == 0)) {
             return DESCRIPTOR.getTagComment();
         } else {
             return this.tagComment;
@@ -122,7 +106,7 @@ public class SvnTagPublisher extends Publisher {
          */
         private SvnTagDescriptorImpl() {
             super(SvnTagPublisher.class);
-            this.tagComment = "Tagged by Hudson SvnTag plugin.";
+            this.tagComment = "Tagged by Hudson svn-tag plugin. Build:${env['BUILD_TAG']}.";
             load();
         }
 
@@ -136,6 +120,7 @@ public class SvnTagPublisher extends Publisher {
             return DESCRIPTION;
         }
 
+        @SuppressWarnings({"LocalVariableOfConcreteClass"})
         @Override
         public Publisher newInstance(StaplerRequest staplerRequest,
                                      JSONObject jsonObject)
@@ -214,12 +199,14 @@ public class SvnTagPublisher extends Publisher {
             this.tagComment = tagComment;
         }
 
-        public void doTagCommentCheck(StaplerRequest req, StaplerResponse rsp, @QueryParameter("value") final String value) throws IOException, ServletException {
+        public void doTagCommentCheck(StaplerRequest req, StaplerResponse rsp,
+                                      @QueryParameter("value") final String value)
+                throws IOException, ServletException {
             new FormFieldValidator(req, rsp, false) {
                 @Override
                 protected void check() throws IOException, ServletException {
                     try {
-                        SvnTagPlugin.evalTagComment(new HashMap<String,String>(), value);
+                        SvnTagPlugin.evalTagComment(new HashMap<String, String>(), value);
                         ok();
                     } catch (CompilationFailedException e) {
                         error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());

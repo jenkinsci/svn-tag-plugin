@@ -1,62 +1,50 @@
 package hudson.plugins.svn_tag;
 
-import hudson.Launcher;
-
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
-
-import hudson.scm.SubversionSCM;
-
-import hudson.util.Scrambler;
-
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.Node;
-
-import org.dom4j.io.SAXReader;
-
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNURL;
-
-import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
-import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
-
-import org.tmatesoft.svn.core.wc.SVNCommitClient;
-import org.tmatesoft.svn.core.wc.SVNCopyClient;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.codehaus.groovy.control.CompilerConfiguration;
-
 import java.io.File;
 import java.io.PrintStream;
-
 import java.net.MalformedURLException;
 import java.net.URL;
-
 import java.util.List;
 import java.util.Map;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
-import groovy.lang.Script;
+import hudson.Launcher;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Hudson;
+import hudson.model.Result;
+import hudson.scm.SubversionSCM;
+import hudson.util.Scrambler;
+import org.codehaus.groovy.control.CompilerConfiguration;
+import org.dom4j.Document;
+import org.dom4j.DocumentException;
+import org.dom4j.Node;
+import org.dom4j.io.SAXReader;
+import org.tmatesoft.svn.core.SVNCommitInfo;
+import org.tmatesoft.svn.core.SVNErrorMessage;
+import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.wc.SVNCommitClient;
+import org.tmatesoft.svn.core.wc.SVNCopyClient;
+import org.tmatesoft.svn.core.wc.SVNRevision;
 
 
 /**
  * Consolidates the work common in Publisher and MavenReporter.
  *
- * @author   Kenji Nakamura
+ * @author Kenji Nakamura
  */
-@SuppressWarnings({ "UtilityClass", "ImplicitCallToSuper" })
+@SuppressWarnings({"UtilityClass", "ImplicitCallToSuper"})
 public class SvnTagPlugin {
     /**
      * Description appeared in configuration screen.
      */
     public static final String DESCRIPTION =
-        "Perform Subversion tagging on successful build";
+            "Perform Subversion tagging on successful build";
 
     /**
      * The prefix to identify jelly variables for this plugin.
@@ -72,9 +60,8 @@ public class SvnTagPlugin {
     /**
      * Returns the root project value.
      *
-     * @param   project  the given project value.
-     *
-     * @return  the root project value.
+     * @param project the given project value.
+     * @return the root project value.
      */
     private static AbstractProject getRootProject(AbstractProject project) {
         if (project.getParent() instanceof Hudson) {
@@ -87,20 +74,19 @@ public class SvnTagPlugin {
     /**
      * True if the operation was successful.
      *
-     * @param   abstractBuild  build
-     * @param   launcher       launcher
-     * @param   buildListener  build listener
-     * @param   tagBaseURLStr  tag base URL string
-     * @param   tagComment     tag comment
-     *
-     * @return  true if the operation was successful
+     * @param abstractBuild build
+     * @param launcher      launcher
+     * @param buildListener build listener
+     * @param tagBaseURLStr tag base URL string
+     * @param tagComment    tag comment
+     * @return true if the operation was successful
      */
     @SuppressWarnings(
-                      {
-                          "UnusedDeclaration", "TypeMayBeWeakened", "unchecked",
-                          "StaticMethodOnlyUsedInOneClass"
-                      }
-                     )
+            {
+                    "UnusedDeclaration", "TypeMayBeWeakened", "unchecked",
+                    "StaticMethodOnlyUsedInOneClass"
+                    }
+    )
     public static boolean perform(AbstractBuild abstractBuild,
                                   Launcher launcher,
                                   BuildListener buildListener,
@@ -114,13 +100,13 @@ public class SvnTagPlugin {
         }
 
         AbstractProject<?, ?> rootProject =
-            getRootProject(abstractBuild.getProject());
+                getRootProject(abstractBuild.getProject());
 
         Map<String, String> env;
 
         if (!(rootProject.getScm() instanceof SubversionSCM)) {
             logger.println("SvnTag plugin doesn't support tagging for SCM " +
-                           rootProject.getScm().toString() + ".");
+                    rootProject.getScm().toString() + ".");
 
             return true;
         }
@@ -139,12 +125,12 @@ public class SvnTagPlugin {
         SubversionSCM.ModuleLocation[] moduleLocations = scm.getLocations();
 
         File svnSCMXml =
-            new File(rootProject.getParent().getRootDir() +
-                     "/hudson.scm.SubversionSCM.xml");
+                new File(rootProject.getParent().getRootDir() +
+                        "/hudson.scm.SubversionSCM.xml");
 
         if (!svnSCMXml.isFile()) {
             logger.println("Subversion configuration file doesn't exist." +
-                           svnSCMXml.getPath());
+                    svnSCMXml.getPath());
 
             return false;
         }
@@ -168,30 +154,30 @@ public class SvnTagPlugin {
             // dom4j can't handle complex XPath such as contains() or
             // following-sibling::* so split the logic into multiple steps
             List<? extends Node> entries =
-                doc.selectNodes("/hudson.scm.SubversionSCM_-DescriptorImpl/credentials[@class='hashtable']/entry");
+                    doc.selectNodes("/hudson.scm.SubversionSCM_-DescriptorImpl/credentials[@class='hashtable']/entry");
 
             for (Node entry : entries) {
                 String key = entry.selectSingleNode("string").getText();
 
                 if (key.indexOf(protocol + "://" + host) > -1) {
                     username =
-                        entry.selectSingleNode("hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential/userName")
-                             .getText();
+                            entry.selectSingleNode("hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential/userName")
+                                    .getText();
                     passwordBase64 =
-                        entry.selectSingleNode("hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential/password")
-                             .getText();
+                            entry.selectSingleNode("hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential/password")
+                                    .getText();
 
                     break;
                 }
             }
         } catch (DocumentException e) {
             logger.println("Failed to parse SubversionSCM XML file." +
-                           e.getLocalizedMessage());
+                    e.getLocalizedMessage());
 
             return false;
         } catch (MalformedURLException e) {
             logger.println("Failed to parse tagBaseURL '" + tagBaseURLStr +
-                           "." + e.getLocalizedMessage());
+                    "." + e.getLocalizedMessage());
 
             return false;
         }
@@ -200,8 +186,8 @@ public class SvnTagPlugin {
             logger.println("moduleLocation: Remote ->" + ml.remote);
 
             ISVNAuthenticationManager sam =
-                new BasicAuthenticationManager(username,
-                                               Scrambler.descramble(passwordBase64));
+                    new BasicAuthenticationManager(username,
+                            Scrambler.descramble(passwordBase64));
 
             SVNCommitClient commitClient = new SVNCommitClient(sam, null);
             SVNCopyClient copyClient = new SVNCopyClient(sam, null);
@@ -214,10 +200,10 @@ public class SvnTagPlugin {
 
             try {
                 SVNCommitInfo deleteInfo =
-                    commitClient.doDelete(new SVNURL[] {
-                                              SVNURL.parseURIEncoded(destUrl)
-                                          },
-                                          "Delete old tag by SvnTag Hudson plugin.");
+                        commitClient.doDelete(new SVNURL[]{
+                                SVNURL.parseURIEncoded(destUrl)
+                        },
+                                "Delete old tag by SvnTag Hudson plugin.");
                 SVNErrorMessage deleteErrMsg = deleteInfo.getErrorMessage();
 
                 if (null != deleteErrMsg) {
@@ -231,9 +217,9 @@ public class SvnTagPlugin {
 
             try {
                 SVNCommitInfo mkdirInfo =
-                    commitClient.doMkDir(new SVNURL[] {
-                                             SVNURL.parseURIEncoded(destUrl)
-                                         }, "Created by SvnTag Hudson plugin.");
+                        commitClient.doMkDir(new SVNURL[]{
+                                SVNURL.parseURIEncoded(destUrl)
+                        }, "Created by SvnTag Hudson plugin.");
                 SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
 
                 if (null != mkdirErrMsg) {
@@ -245,10 +231,10 @@ public class SvnTagPlugin {
                 String evalComment = evalTagComment(abstractBuild.getEnvVars(), tagComment);
 
                 SVNCommitInfo commitInfo =
-                    copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
-                                      SVNRevision.create(Long.valueOf(env.get("SVN_REVISION"))),
-                                      SVNURL.parseURIEncoded(destUrl), false,
-                                      false, evalComment);
+                        copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
+                                SVNRevision.create(Long.valueOf(env.get("SVN_REVISION"))),
+                                SVNURL.parseURIEncoded(destUrl), false,
+                                false, evalComment);
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
 
                 if (null != errorMsg) {
@@ -257,11 +243,11 @@ public class SvnTagPlugin {
                     return false;
                 } else {
                     logger.println("Tagged as Revision " +
-                                   commitInfo.getNewRevision());
+                            commitInfo.getNewRevision());
                 }
             } catch (SVNException e) {
                 logger.println("Subversion copy failed. " +
-                               e.getLocalizedMessage());
+                        e.getLocalizedMessage());
 
                 return false;
             }
@@ -270,7 +256,8 @@ public class SvnTagPlugin {
         return true;
     }
 
-    static String evalTagComment(Map<String,String> env, String tagComment) {
+    @SuppressWarnings({"StaticMethodOnlyUsedInOneClass", "TypeMayBeWeakened"})
+    static String evalTagComment(Map<String, String> env, String tagComment) {
         Binding binding = new Binding();
         binding.setVariable("env", env);
         binding.setVariable("sys", System.getProperties());
