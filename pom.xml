@@ -9,7 +9,7 @@
   <artifactId>svn-tag</artifactId>
   <name>Hudson Subversion Tagging Plug-in</name>
   <packaging>hpi</packaging>
-  <version>1.0-SNAPSHOT</version>
+  <version>1.0</version>
   <developers>
     <developer>
       <name>Kenji Nakamura</name>
@@ -35,4 +35,10 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
+
+  <scm>
+    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/svn-tag-1.0</connection>
+    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/svn-tag-1.0</developerConnection>
+    <url>https://hudson.dev.java.net/source/browse/hudson/hudson/plugins/svn-tag/tags/svn-tag-1.0</url>
+  </scm>
 </project>
