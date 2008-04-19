@@ -9,7 +9,7 @@
   <artifactId>svn-tag</artifactId>
   <name>Hudson Subversion Tagging Plug-in</name>
   <packaging>hpi</packaging>
-  <version>1.0</version>
+  <version>1.0-SNAPSHOT</version>
   <developers>
     <developer>
       <name>Kenji Nakamura</name>
