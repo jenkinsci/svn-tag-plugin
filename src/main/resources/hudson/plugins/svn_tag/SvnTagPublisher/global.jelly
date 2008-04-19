@@ -12,10 +12,10 @@
     so it should be straightforward to find them.
   -->
   <f:section title="Subversion Tagging">
-     <f:entry title="Default Tag Base URL" help="${rootURL}/plugin/svn-tag/help-global-DefaultTagBaseURL.html">
+     <f:entry title="Default Tag Base URL" help="/plugin/svn-tag/help-global-DefaultTagBaseURL.html">
         <f:textbox name="svntag.defaultTagBaseURL" value="${descriptor.getDefaultTagBaseURL()}" />
 	</f:entry>
-      <f:entry title="Tag comment template" help="${rootURL}/plugin/svn-tag/help-global-TagComment.html">
+      <f:entry title="Tag comment template" help="/plugin/svn-tag/help-global-TagComment.html">
           <f:textbox name="svntag.tagComment" value="${descriptor.getTagComment()}"
           checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagCommentCheck?value='+escape(this.value)" />
       </f:entry>
