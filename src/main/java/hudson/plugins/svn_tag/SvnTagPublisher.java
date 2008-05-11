@@ -106,6 +106,7 @@ public class SvnTagPublisher extends Publisher {
          */
         private SvnTagDescriptorImpl() {
             super(SvnTagPublisher.class);
+            this.defaultTagBaseURL = "http://subversion_host/project/tags/last-successful/${env['JOB_NAME']}";
             this.tagComment = "Tagged by Hudson svn-tag plugin. Build:${env['BUILD_TAG']}.";
             load();
         }
@@ -157,8 +158,12 @@ public class SvnTagPublisher extends Publisher {
                             (tagBaseURLString.length() == 0)) {
                         error("Please specify URL.");
                     }
-
-                    ok();
+                    try {
+                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagBaseURLString);
+                        ok();
+                    } catch (CompilationFailedException e) {
+                        error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());
+                    }
                 }
             }.process();
         }
@@ -206,7 +211,7 @@ public class SvnTagPublisher extends Publisher {
                 @Override
                 protected void check() throws IOException, ServletException {
                     try {
-                        SvnTagPlugin.evalTagComment(new HashMap<String, String>(), value);
+                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), value);
                         ok();
                     } catch (CompilationFailedException e) {
                         error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());

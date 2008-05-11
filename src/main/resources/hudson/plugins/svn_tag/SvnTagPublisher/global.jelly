@@ -13,7 +13,8 @@
   -->
   <f:section title="Subversion Tagging">
      <f:entry title="Default Tag Base URL" help="/plugin/svn-tag/help-global-DefaultTagBaseURL.html">
-        <f:textbox name="svntag.defaultTagBaseURL" value="${descriptor.getDefaultTagBaseURL()}" />
+        <f:textbox name="svntag.defaultTagBaseURL" value="${descriptor.getDefaultTagBaseURL()}"
+          checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagBaseURLCheck?value='+escape(this.value)" />
 	</f:entry>
       <f:entry title="Tag comment template" help="/plugin/svn-tag/help-global-TagComment.html">
           <f:textbox name="svntag.tagComment" value="${descriptor.getTagComment()}"

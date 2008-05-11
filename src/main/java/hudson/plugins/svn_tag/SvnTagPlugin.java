@@ -1,12 +1,5 @@
 package hudson.plugins.svn_tag;
 
-import java.io.File;
-import java.io.PrintStream;
-import java.net.MalformedURLException;
-import java.net.URL;
-import java.util.List;
-import java.util.Map;
-
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.Launcher;
@@ -32,14 +25,22 @@ import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
+import java.io.File;
+import java.io.PrintStream;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.List;
+import java.util.Map;
+
 
 /**
  * Consolidates the work common in Publisher and MavenReporter.
  *
  * @author Kenji Nakamura
  */
-@SuppressWarnings({"UtilityClass", "ImplicitCallToSuper"})
+@SuppressWarnings({"UtilityClass", "ImplicitCallToSuper", "MethodReturnOfConcreteClass", "MethodParameterOfConcreteClass", "InstanceofInterfaces", "unchecked"})
 public class SvnTagPlugin {
+    
     /**
      * Description appeared in configuration screen.
      */
@@ -63,10 +64,13 @@ public class SvnTagPlugin {
      * @param project the given project value.
      * @return the root project value.
      */
+    @SuppressWarnings({"MethodParameterOfConcreteClass"})
     private static AbstractProject getRootProject(AbstractProject project) {
+        //noinspection InstanceofInterfaces
         if (project.getParent() instanceof Hudson) {
             return project;
         } else {
+            //noinspection CastToConcreteClass
             return getRootProject((AbstractProject) project.getParent());
         }
     }
@@ -81,12 +85,7 @@ public class SvnTagPlugin {
      * @param tagComment    tag comment
      * @return true if the operation was successful
      */
-    @SuppressWarnings(
-            {
-                    "UnusedDeclaration", "TypeMayBeWeakened", "unchecked",
-                    "StaticMethodOnlyUsedInOneClass"
-                    }
-    )
+    @SuppressWarnings({"FeatureEnvy", "UnusedDeclaration", "TypeMayBeWeakened", "LocalVariableOfConcreteClass"})
     public static boolean perform(AbstractBuild abstractBuild,
                                   Launcher launcher,
                                   BuildListener buildListener,
@@ -145,16 +144,17 @@ public class SvnTagPlugin {
         // static with the given nature of the information stored in it.
 
         try {
-            URL tagBaseURL = new URL(tagBaseURLStr);
-            String protocol = tagBaseURL.getProtocol();
-            String host = tagBaseURL.getHost();
+            tagBaseURLStr = evalGroovyExpression(env, tagBaseURLStr);
+            URI tagBaseURI = new URI(tagBaseURLStr);
+            String protocol = tagBaseURI.getScheme();
+            String host = tagBaseURI.getHost();
 
             Document doc = new SAXReader().read(svnSCMXml);
 
             // dom4j can't handle complex XPath such as contains() or
             // following-sibling::* so split the logic into multiple steps
             List<? extends Node> entries =
-                    doc.selectNodes("/hudson.scm.SubversionSCM_-DescriptorImpl/credentials[@class='hashtable']/entry");
+                    (List<? extends Node>) doc.selectNodes("/hudson.scm.SubversionSCM_-DescriptorImpl/credentials[@class='hashtable']/entry");
 
             for (Node entry : entries) {
                 String key = entry.selectSingleNode("string").getText();
@@ -175,9 +175,9 @@ public class SvnTagPlugin {
                     e.getLocalizedMessage());
 
             return false;
-        } catch (MalformedURLException e) {
+        } catch (URISyntaxException e) {
             logger.println("Failed to parse tagBaseURL '" + tagBaseURLStr +
-                    "." + e.getLocalizedMessage());
+                    ". " + e.getLocalizedMessage());
 
             return false;
         }
@@ -196,12 +196,10 @@ public class SvnTagPlugin {
                 tagBaseURLStr += "/";
             }
 
-            String destUrl = tagBaseURLStr + env.get("JOB_NAME");
-
             try {
                 SVNCommitInfo deleteInfo =
                         commitClient.doDelete(new SVNURL[]{
-                                SVNURL.parseURIEncoded(destUrl)
+                                SVNURL.parseURIEncoded(tagBaseURLStr)
                         },
                                 "Delete old tag by SvnTag Hudson plugin.");
                 SVNErrorMessage deleteErrMsg = deleteInfo.getErrorMessage();
@@ -209,16 +207,16 @@ public class SvnTagPlugin {
                 if (null != deleteErrMsg) {
                     logger.println(deleteErrMsg.getMessage());
                 } else {
-                    logger.println("Delete old tag " + destUrl + ".");
+                    logger.println("Delete old tag " + tagBaseURLStr + ".");
                 }
             } catch (SVNException e) {
-                logger.println("There was no old tag at " + destUrl + ".");
+                logger.println("There was no old tag at " + tagBaseURLStr + ".");
             }
 
             try {
                 SVNCommitInfo mkdirInfo =
                         commitClient.doMkDir(new SVNURL[]{
-                                SVNURL.parseURIEncoded(destUrl)
+                                SVNURL.parseURIEncoded(tagBaseURLStr)
                         }, "Created by SvnTag Hudson plugin.");
                 SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
 
@@ -228,12 +226,12 @@ public class SvnTagPlugin {
                     return false;
                 }
 
-                String evalComment = evalTagComment(abstractBuild.getEnvVars(), tagComment);
+                String evalComment = evalGroovyExpression((Map<String, String>) abstractBuild.getEnvVars(), tagComment);
 
                 SVNCommitInfo commitInfo =
                         copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
                                 SVNRevision.create(Long.valueOf(env.get("SVN_REVISION"))),
-                                SVNURL.parseURIEncoded(destUrl), false,
+                                SVNURL.parseURIEncoded(tagBaseURLStr), false,
                                 false, evalComment);
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
 
@@ -257,7 +255,7 @@ public class SvnTagPlugin {
     }
 
     @SuppressWarnings({"StaticMethodOnlyUsedInOneClass", "TypeMayBeWeakened"})
-    static String evalTagComment(Map<String, String> env, String tagComment) {
+    static String evalGroovyExpression(Map<String, String> env, String tagComment) {
         Binding binding = new Binding();
         binding.setVariable("env", env);
         binding.setVariable("sys", System.getProperties());
