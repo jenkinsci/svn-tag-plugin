@@ -25,10 +25,14 @@ import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
 import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -182,14 +186,55 @@ public class SvnTagPlugin {
             return false;
         }
 
+        // environment variable "SVN_REVISION" doesn't contain revision number when multiple modules are
+        // specified. Instead, parse revision.txt and obtain the corresponding revision numbers.
+        Map<String,Long> revisions = null;
+        try {
+            revisions = parseRevisionFile(abstractBuild);
+        } catch (IOException e) {
+            logger.println("Failed to parse revision.txt. " + e.getLocalizedMessage());
+            return false;
+        }
+
+
+        ISVNAuthenticationManager sam =
+                new BasicAuthenticationManager(username,
+                        Scrambler.descramble(passwordBase64));
+
+        SVNCommitClient commitClient = new SVNCommitClient(sam, null);
+
+        try {
+            SVNCommitInfo deleteInfo =
+                    commitClient.doDelete(new SVNURL[]{
+                            SVNURL.parseURIEncoded(tagBaseURLStr)
+                    },
+                            "Delete old tag by SvnTag Hudson plugin.");
+            SVNErrorMessage deleteErrMsg = deleteInfo.getErrorMessage();
+
+            if (null != deleteErrMsg) {
+                logger.println(deleteErrMsg.getMessage());
+            } else {
+                logger.println("Delete old tag " + tagBaseURLStr + ".");
+            }
+
+            SVNCommitInfo mkdirInfo =
+                    commitClient.doMkDir(new SVNURL[]{
+                            SVNURL.parseURIEncoded(tagBaseURLStr)
+                    }, "Created by SvnTag Hudson plugin.");
+            SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
+
+            if (null != mkdirErrMsg) {
+                logger.println(mkdirErrMsg.getMessage());
+
+                return false;
+            }
+        } catch (SVNException e) {
+            logger.println("There was no old tag at " + tagBaseURLStr + ".");
+        }
+
         for (SubversionSCM.ModuleLocation ml : moduleLocations) {
             logger.println("moduleLocation: Remote ->" + ml.remote);
 
-            ISVNAuthenticationManager sam =
-                    new BasicAuthenticationManager(username,
-                            Scrambler.descramble(passwordBase64));
-
-            SVNCommitClient commitClient = new SVNCommitClient(sam, null);
             SVNCopyClient copyClient = new SVNCopyClient(sam, null);
 
             if (!tagBaseURLStr.endsWith("/")) {
@@ -197,40 +242,11 @@ public class SvnTagPlugin {
             }
 
             try {
-                SVNCommitInfo deleteInfo =
-                        commitClient.doDelete(new SVNURL[]{
-                                SVNURL.parseURIEncoded(tagBaseURLStr)
-                        },
-                                "Delete old tag by SvnTag Hudson plugin.");
-                SVNErrorMessage deleteErrMsg = deleteInfo.getErrorMessage();
-
-                if (null != deleteErrMsg) {
-                    logger.println(deleteErrMsg.getMessage());
-                } else {
-                    logger.println("Delete old tag " + tagBaseURLStr + ".");
-                }
-            } catch (SVNException e) {
-                logger.println("There was no old tag at " + tagBaseURLStr + ".");
-            }
-
-            try {
-                SVNCommitInfo mkdirInfo =
-                        commitClient.doMkDir(new SVNURL[]{
-                                SVNURL.parseURIEncoded(tagBaseURLStr)
-                        }, "Created by SvnTag Hudson plugin.");
-                SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
-
-                if (null != mkdirErrMsg) {
-                    logger.println(mkdirErrMsg.getMessage());
-
-                    return false;
-                }
-
                 String evalComment = evalGroovyExpression((Map<String, String>) abstractBuild.getEnvVars(), tagComment);
 
                 SVNCommitInfo commitInfo =
                         copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
-                                SVNRevision.create(Long.valueOf(env.get("SVN_REVISION"))),
+                                SVNRevision.create(Long.valueOf(revisions.get(ml.remote))),
                                 SVNURL.parseURIEncoded(tagBaseURLStr), false,
                                 false, evalComment);
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
@@ -268,5 +284,42 @@ public class SvnTagPlugin {
         } else {
             return result.toString().trim();
         }
+    }
+
+
+    /**
+     * Reads the revision file of the specified build.
+     *
+     * @return
+     *      map from {@link SvnInfo#url Subversion URL} to its revision.
+     */
+    /*package*/ static Map<String,Long> parseRevisionFile(AbstractBuild build) throws IOException {
+        Map<String,Long> revisions = new HashMap<String,Long>(); // module -> revision
+        {// read the revision file of the last build
+            File file = SubversionSCM.getRevisionFile(build);
+            if(!file.exists())
+                // nothing to compare against
+                return revisions;
+
+            BufferedReader br = new BufferedReader(new FileReader(file));
+            try {
+                String line;
+                while((line=br.readLine())!=null) {
+                    int index = line.lastIndexOf('/');
+                    if(index<0) {
+                        continue;   // invalid line?
+                    }
+                    try {
+                        revisions.put(line.substring(0,index), Long.parseLong(line.substring(index+1)));
+                    } catch (NumberFormatException e) {
+                        // perhaps a corrupted line. ignore
+                    }
+                }
+            } finally {
+                br.close();
+            }
+        }
+
+        return revisions;
     }
 }
