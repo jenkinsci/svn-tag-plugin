@@ -9,21 +9,17 @@ import hudson.model.BuildListener;
 import hudson.model.Hudson;
 import hudson.model.Result;
 import hudson.scm.SubversionSCM;
-import hudson.util.Scrambler;
 import org.codehaus.groovy.control.CompilerConfiguration;
-import org.dom4j.Document;
-import org.dom4j.DocumentException;
-import org.dom4j.Node;
-import org.dom4j.io.SAXReader;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
 import org.tmatesoft.svn.core.SVNURL;
-import org.tmatesoft.svn.core.auth.BasicAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
+import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
+import org.tmatesoft.svn.core.wc.SVNWCUtil;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -33,13 +29,11 @@ import java.io.PrintStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 
 /**
  * Consolidates the work common in Publisher and MavenReporter.
- *
  * @author Kenji Nakamura
  */
 @SuppressWarnings({"UtilityClass", "ImplicitCallToSuper", "MethodReturnOfConcreteClass", "MethodParameterOfConcreteClass", "InstanceofInterfaces", "unchecked"})
@@ -127,58 +121,12 @@ public class SvnTagPlugin {
 
         SubversionSCM.ModuleLocation[] moduleLocations = scm.getLocations();
 
-        File svnSCMXml =
-                new File(rootProject.getParent().getRootDir() +
-                        "/hudson.scm.SubversionSCM.xml");
-
-        if (!svnSCMXml.isFile()) {
-            logger.println("Subversion configuration file doesn't exist." +
-                    svnSCMXml.getPath());
-
-            return false;
-        }
-
-        String username = null;
-        String passwordBase64 = null;
-
-        // svnSCMXml is the output of XStream, but it cannot be deserialized
-        // with it because of SubversionSCM$DescriptorImpl is a private class.
-        // Here the xml is parsed in brute force manner. It is less optimal
-        // because it is vulnerable to the schema change, but should be pretty
-        // static with the given nature of the information stored in it.
-
         try {
             tagBaseURLStr = evalGroovyExpression(env, tagBaseURLStr);
             URI tagBaseURI = new URI(tagBaseURLStr);
             String protocol = tagBaseURI.getScheme();
             String host = tagBaseURI.getHost();
 
-            Document doc = new SAXReader().read(svnSCMXml);
-
-            // dom4j can't handle complex XPath such as contains() or
-            // following-sibling::* so split the logic into multiple steps
-            List<? extends Node> entries =
-                    (List<? extends Node>) doc.selectNodes("/hudson.scm.SubversionSCM_-DescriptorImpl/credentials[@class='hashtable']/entry");
-
-            for (Node entry : entries) {
-                String key = entry.selectSingleNode("string").getText();
-
-                if (key.indexOf(protocol + "://" + host) > -1) {
-                    username =
-                            entry.selectSingleNode("hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential/userName")
-                                    .getText();
-                    passwordBase64 =
-                            entry.selectSingleNode("hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential/password")
-                                    .getText();
-
-                    break;
-                }
-            }
-        } catch (DocumentException e) {
-            logger.println("Failed to parse SubversionSCM XML file." +
-                    e.getLocalizedMessage());
-
-            return false;
         } catch (URISyntaxException e) {
             logger.println("Failed to parse tagBaseURL '" + tagBaseURLStr +
                     ". " + e.getLocalizedMessage());
@@ -196,10 +144,14 @@ public class SvnTagPlugin {
             return false;
         }
 
-
-        ISVNAuthenticationManager sam =
-                new BasicAuthenticationManager(username,
-                        Scrambler.descramble(passwordBase64));
+        ISVNAuthenticationProvider sap =  scm.getDescriptor().createAuthenticationProvider();
+        if(sap == null) {
+            logger.println("Subversion authentication info is not set.");
+            return false;
+        }
+        
+        ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+        sam.setAuthenticationProvider(sap);
 
         SVNCommitClient commitClient = new SVNCommitClient(sam, null);
 
@@ -293,31 +245,32 @@ public class SvnTagPlugin {
      * @return
      *      map from {@link SvnInfo#url Subversion URL} to its revision.
      */
-    /*package*/ static Map<String,Long> parseRevisionFile(AbstractBuild build) throws IOException {
+    /*package*/ @SuppressWarnings({"NestedAssignment"})
+    static Map<String,Long> parseRevisionFile(AbstractBuild build) throws IOException {
         Map<String,Long> revisions = new HashMap<String,Long>(); // module -> revision
-        {// read the revision file of the last build
-            File file = SubversionSCM.getRevisionFile(build);
-            if(!file.exists())
-                // nothing to compare against
-                return revisions;
+        // read the revision file of the last build
+        File file = SubversionSCM.getRevisionFile(build);
+        if(!file.exists()) // nothing to compare against
+        {
+            return revisions;
+        }
 
-            BufferedReader br = new BufferedReader(new FileReader(file));
-            try {
-                String line;
-                while((line=br.readLine())!=null) {
-                    int index = line.lastIndexOf('/');
-                    if(index<0) {
-                        continue;   // invalid line?
-                    }
-                    try {
-                        revisions.put(line.substring(0,index), Long.parseLong(line.substring(index+1)));
-                    } catch (NumberFormatException e) {
-                        // perhaps a corrupted line. ignore
-                    }
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        try {
+            String line;
+            while((line=br.readLine())!=null) {
+                int index = line.lastIndexOf('/');
+                if(index<0) {
+                    continue;   // invalid line?
                 }
-            } finally {
-                br.close();
+                try {
+                    revisions.put(line.substring(0,index), Long.parseLong(line.substring(index+1)));
+                } catch (NumberFormatException e) {
+                    // perhaps a corrupted line. ignore
+                }
             }
+        } finally {
+            br.close();
         }
 
         return revisions;

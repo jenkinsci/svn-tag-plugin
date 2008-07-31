@@ -8,6 +8,7 @@ import hudson.tasks.BuildStep;
  * Entry point of Subversion Tagging plugin.
  *
  * @author Kenji Nakamura
+ * @plugin
  */
 public class PluginImpl extends Plugin {
     @Override
