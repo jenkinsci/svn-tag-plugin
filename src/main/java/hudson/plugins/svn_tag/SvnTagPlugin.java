@@ -159,6 +159,7 @@ public class SvnTagPlugin {
             SVNURL parsedTagBaseURL = null;
             try {
                 parsedTagBaseURL = SVNURL.parseURIEncoded(repoURI.resolve(tagBaseURLStr).toString());
+                logger.println("Tag Base URL: '" + parsedTagBaseURL.toString() + "'.");
             } catch (SVNException e) {
                 logger.println("Failed to parse tag base URL '" + tagBaseURLStr + "'. " + e.getLocalizedMessage());
             }
@@ -186,7 +187,7 @@ public class SvnTagPlugin {
                     return false;
                 }
             } catch (SVNException e) {
-                logger.println("There was no old tag at " + tagBaseURLStr + ".");
+                 logger.println("There was no old tag at " + tagBaseURLStr + ".");
             }
 
             SVNCopyClient copyClient = new SVNCopyClient(sam, null);
