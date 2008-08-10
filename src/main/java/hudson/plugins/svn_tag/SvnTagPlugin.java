@@ -121,18 +121,7 @@ public class SvnTagPlugin {
 
         SubversionSCM.ModuleLocation[] moduleLocations = scm.getLocations();
 
-        try {
-            tagBaseURLStr = evalGroovyExpression(env, tagBaseURLStr);
-            URI tagBaseURI = new URI(tagBaseURLStr);
-            String protocol = tagBaseURI.getScheme();
-            String host = tagBaseURI.getHost();
-
-        } catch (URISyntaxException e) {
-            logger.println("Failed to parse tagBaseURL '" + tagBaseURLStr +
-                    ". " + e.getLocalizedMessage());
-
-            return false;
-        }
+        tagBaseURLStr = evalGroovyExpression(env, tagBaseURLStr);
 
         // environment variable "SVN_REVISION" doesn't contain revision number when multiple modules are
         // specified. Instead, parse revision.txt and obtain the corresponding revision numbers.
@@ -155,43 +144,52 @@ public class SvnTagPlugin {
 
         SVNCommitClient commitClient = new SVNCommitClient(sam, null);
 
-        try {
-            SVNCommitInfo deleteInfo =
-                    commitClient.doDelete(new SVNURL[]{
-                            SVNURL.parseURIEncoded(tagBaseURLStr)
-                    },
-                            "Delete old tag by SvnTag Hudson plugin.");
-            SVNErrorMessage deleteErrMsg = deleteInfo.getErrorMessage();
-
-            if (null != deleteErrMsg) {
-                logger.println(deleteErrMsg.getMessage());
-            } else {
-                logger.println("Delete old tag " + tagBaseURLStr + ".");
-            }
-
-            SVNCommitInfo mkdirInfo =
-                    commitClient.doMkDir(new SVNURL[]{
-                            SVNURL.parseURIEncoded(tagBaseURLStr)
-                    }, "Created by SvnTag Hudson plugin.");
-            SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
-
-            if (null != mkdirErrMsg) {
-                logger.println(mkdirErrMsg.getMessage());
-
-                return false;
-            }
-        } catch (SVNException e) {
-            logger.println("There was no old tag at " + tagBaseURLStr + ".");
-        }
 
         for (SubversionSCM.ModuleLocation ml : moduleLocations) {
             logger.println("moduleLocation: Remote ->" + ml.remote);
 
-            SVNCopyClient copyClient = new SVNCopyClient(sam, null);
-
-            if (!tagBaseURLStr.endsWith("/")) {
-                tagBaseURLStr += "/";
+            URI repoURI = null;
+            try {
+                repoURI = new URI(ml.remote);
+            } catch (URISyntaxException e) {
+                logger.println("Failed to parse SVN repo URL. " + e.getLocalizedMessage());
+                return false;
             }
+
+            SVNURL parsedTagBaseURL = null;
+            try {
+                parsedTagBaseURL = SVNURL.parseURIEncoded(repoURI.resolve(tagBaseURLStr).toString());
+            } catch (SVNException e) {
+                logger.println("Failed to parse tag base URL '" + tagBaseURLStr + "'. " + e.getLocalizedMessage());
+            }
+
+            try {
+                SVNCommitInfo deleteInfo =
+                        commitClient.doDelete(new SVNURL[]{ parsedTagBaseURL},
+                                "Delete old tag by SvnTag Hudson plugin.");
+                SVNErrorMessage deleteErrMsg = deleteInfo.getErrorMessage();
+
+                if (null != deleteErrMsg) {
+                    logger.println(deleteErrMsg.getMessage());
+                } else {
+                    logger.println("Delete old tag " + tagBaseURLStr + ".");
+                }
+
+                SVNCommitInfo mkdirInfo =
+                        commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
+                                "Created by SvnTag Hudson plugin.");
+                SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
+
+                if (null != mkdirErrMsg) {
+                    logger.println(mkdirErrMsg.getMessage());
+
+                    return false;
+                }
+            } catch (SVNException e) {
+                logger.println("There was no old tag at " + tagBaseURLStr + ".");
+            }
+
+            SVNCopyClient copyClient = new SVNCopyClient(sam, null);
 
             try {
                 String evalComment = evalGroovyExpression((Map<String, String>) abstractBuild.getEnvVars(), tagComment);
@@ -199,7 +197,7 @@ public class SvnTagPlugin {
                 SVNCommitInfo commitInfo =
                         copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
                                 SVNRevision.create(Long.valueOf(revisions.get(ml.remote))),
-                                SVNURL.parseURIEncoded(tagBaseURLStr), false,
+                                parsedTagBaseURL, false,
                                 false, evalComment);
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
 
