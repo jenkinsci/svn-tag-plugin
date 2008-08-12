@@ -132,6 +132,7 @@ public class SvnTagPublisher extends Publisher {
             return p;
         }
 
+        @SuppressWarnings({"deprecation"})
         @Override
         public boolean configure(StaplerRequest staplerRequest)
                 throws FormException {
@@ -159,7 +160,7 @@ public class SvnTagPublisher extends Publisher {
                         error("Please specify URL.");
                     }
                     try {
-                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagBaseURLString);
+                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagBaseURLString, null);
                         ok();
                     } catch (CompilationFailedException e) {
                         error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());
@@ -211,7 +212,7 @@ public class SvnTagPublisher extends Publisher {
                 @Override
                 protected void check() throws IOException, ServletException {
                     try {
-                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), value);
+                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), value, null);
                         ok();
                     } catch (CompilationFailedException e) {
                         error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());

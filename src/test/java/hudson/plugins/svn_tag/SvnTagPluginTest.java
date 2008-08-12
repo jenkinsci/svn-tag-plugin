@@ -12,15 +12,15 @@ import org.testng.annotations.Test;
  */
 public class SvnTagPluginTest {
     @Test public void testEvalTagComment() throws Exception {
-        String s = SvnTagPlugin.evalGroovyExpression(new HashMap(), "Simple tag");
+        String s = SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), "Simple tag", null);
         assert s.equals("Simple tag") : "Failed simple tag test. Value '" + s + "'";
         System.setProperty("foo", "bar");
-        s = SvnTagPlugin.evalGroovyExpression(new HashMap(), "Tag with sys props ${sys['foo']}.");
+        s = SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), "Tag with sys props ${sys['foo']}.", null);
         assert s.equals("Tag with sys props bar.") : "Failed sys prop embedded tag test. Value '" + s + "'";
         String envValue = System.getenv("ENV_FOO");
         if(envValue != null && envValue.equals("env_bar")) {
             System.out.println("Env value '" + envValue + "'");
-            s = SvnTagPlugin.evalGroovyExpression(System.getenv(), "Tag with env ${env['ENV_FOO']}.");
+            s = SvnTagPlugin.evalGroovyExpression(System.getenv(), "Tag with env ${env['ENV_FOO']}.", null);
             assert s.equals("Tag with env env_bar.") : "Failed env prop embedded tag test.Value '" + s + "'";
         }
     }
