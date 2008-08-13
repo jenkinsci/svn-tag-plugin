@@ -21,6 +21,8 @@ import org.tmatesoft.svn.core.wc.SVNCopyClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.apache.commons.lang.StringUtils;
+import org.apache.commons.io.IOUtils;
+import org.apache.commons.io.FileUtils;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -141,6 +143,19 @@ public class SvnTagPlugin {
         ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
         sam.setAuthenticationProvider(sap);
 
+        String emptyDirName = System.getProperty("java.io.tmpdir") + "/hudson/svn_tag/emptyDir";
+        File emptyDir = new File(emptyDirName);
+        try {
+            if (emptyDir.exists()) {
+                FileUtils.forceDelete(emptyDir);
+            }
+            FileUtils.forceMkdir(emptyDir);
+            FileUtils.forceDeleteOnExit(emptyDir);
+        } catch (IOException e) {
+            logger.println("Failed to create an empty directory used to create intermediate directories." + e.getLocalizedMessage());
+            return false;
+        }
+
         SVNCommitClient commitClient = new SVNCommitClient(sam, null);
 
 
@@ -179,18 +194,27 @@ public class SvnTagPlugin {
                     logger.println("Delete old tag " + evaledTagBaseURLStr + ".");
                 }
 
-                SVNCommitInfo mkdirInfo =
-                        commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
-                                "Created by SvnTag Hudson plugin.");
-                SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
-
-                if (null != mkdirErrMsg) {
-                    logger.println(mkdirErrMsg.getMessage());
-
-                    return false;
-                }
             } catch (SVNException e) {
                 logger.println("There was no old tag at " + evaledTagBaseURLStr + ".");
+            }
+
+            SVNCommitInfo mkdirInfo = null;
+            try {
+                // commtClient.doMkDir doesn't support "-parent" option available in svn command.
+                // Import an empty directory to create intermediate directories.
+//                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
+//                        "Created by SvnTag Hudson plugin.");
+                mkdirInfo = commitClient.doImport(emptyDir, parsedTagBaseURL, "Created by SvnTag Hudson plugin.", false);
+            } catch (SVNException e) {
+                logger.println("Failed to create a directory '" + parsedTagBaseURL.toString() + "'.");
+                return false;
+            }
+            SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
+
+            if (null != mkdirErrMsg) {
+                logger.println(mkdirErrMsg.getMessage());
+
+                return false;
             }
 
             SVNCopyClient copyClient = new SVNCopyClient(sam, null);
