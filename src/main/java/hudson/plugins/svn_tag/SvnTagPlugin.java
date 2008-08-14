@@ -175,8 +175,10 @@ public class SvnTagPlugin {
             }
 
             SVNURL parsedTagBaseURL = null;
+            SVNURL parsedTagBaseParentURL = null;
             try {
                 parsedTagBaseURL = SVNURL.parseURIEncoded(repoURI.resolve(evaledTagBaseURLStr).toString());
+                parsedTagBaseParentURL = SVNURL.parseURIEncoded(repoURI.resolve(evaledTagBaseURLStr + "/..").toString());
                 logger.println("Tag Base URL: '" + parsedTagBaseURL.toString() + "'.");
             } catch (SVNException e) {
                 logger.println("Failed to parse tag base URL '" + evaledTagBaseURLStr + "'. " + e.getLocalizedMessage());
@@ -204,9 +206,9 @@ public class SvnTagPlugin {
                 // Import an empty directory to create intermediate directories.
 //                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
 //                        "Created by SvnTag Hudson plugin.");
-                mkdirInfo = commitClient.doImport(emptyDir, parsedTagBaseURL, "Created by SvnTag Hudson plugin.", false);
+                mkdirInfo = commitClient.doImport(emptyDir, parsedTagBaseParentURL, "Created by SvnTag Hudson plugin.", false);
             } catch (SVNException e) {
-                logger.println("Failed to create a directory '" + parsedTagBaseURL.toString() + "'.");
+                logger.println("Failed to create a directory '" + parsedTagBaseParentURL.toString() + "'.");
                 return false;
             }
             SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
