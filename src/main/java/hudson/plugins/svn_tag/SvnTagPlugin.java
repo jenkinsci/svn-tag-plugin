@@ -3,12 +3,10 @@ package hudson.plugins.svn_tag;
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.Launcher;
-import hudson.model.AbstractBuild;
-import hudson.model.AbstractProject;
-import hudson.model.BuildListener;
-import hudson.model.Hudson;
-import hudson.model.Result;
+import hudson.model.*;
 import hudson.scm.SubversionSCM;
+import org.apache.commons.io.FileUtils;
+import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNErrorMessage;
@@ -20,18 +18,14 @@ import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
-import org.apache.commons.lang.StringUtils;
-import org.apache.commons.io.IOUtils;
-import org.apache.commons.io.FileUtils;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.FileReader;
-import java.io.IOException;
-import java.io.PrintStream;
+import java.io.*;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.*;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -175,10 +169,14 @@ public class SvnTagPlugin {
             }
 
             SVNURL parsedTagBaseURL = null;
+            SVNURL parsedTagBaseParentURL = null;
             try {
-                parsedTagBaseURL = SVNURL.parseURIEncoded(repoURI.resolve(evaledTagBaseURLStr).toString());
+                parsedTagBaseURL = SVNURL.parseURIDecoded(repoURI.resolve(evaledTagBaseURLStr).toString());
+                parsedTagBaseParentURL = SVNURL.parseURIDecoded(new URI(parsedTagBaseURL.toString() + "/../").normalize().toString());
                 logger.println("Tag Base URL: '" + parsedTagBaseURL.toString() + "'.");
             } catch (SVNException e) {
+                logger.println("Failed to parse tag base URL '" + evaledTagBaseURLStr + "'. " + e.getLocalizedMessage());
+            } catch (URISyntaxException e) {
                 logger.println("Failed to parse tag base URL '" + evaledTagBaseURLStr + "'. " + e.getLocalizedMessage());
             }
 
@@ -198,15 +196,15 @@ public class SvnTagPlugin {
                 logger.println("There was no old tag at " + evaledTagBaseURLStr + ".");
             }
 
-            SVNCommitInfo mkdirInfo = null;
+            SVNCommitInfo mkdirInfo;
             try {
                 // commtClient.doMkDir doesn't support "-parent" option available in svn command.
                 // Import an empty directory to create intermediate directories.
 //                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
 //                        "Created by SvnTag Hudson plugin.");
-                mkdirInfo = commitClient.doImport(emptyDir, parsedTagBaseURL, "Created by SvnTag Hudson plugin.", false);
+                mkdirInfo = commitClient.doImport(emptyDir, parsedTagBaseParentURL, "Created by SvnTag Hudson plugin.", false);
             } catch (SVNException e) {
-                logger.println("Failed to create a directory '" + parsedTagBaseURL.toString() + "'.");
+                logger.println("Failed to create a directory '" + parsedTagBaseParentURL.toString() + "'.");
                 return false;
             }
             SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
