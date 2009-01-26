@@ -54,23 +54,6 @@ public class SvnTagPlugin {
     }
 
     /**
-     * Returns the root project value.
-     *
-     * @param project the given project value.
-     * @return the root project value.
-     */
-    @SuppressWarnings({"MethodParameterOfConcreteClass"})
-    private static AbstractProject getRootProject(AbstractProject project) {
-        //noinspection InstanceofInterfaces
-        if (project.getParent() instanceof Hudson) {
-            return project;
-        } else {
-            //noinspection CastToConcreteClass
-            return getRootProject((AbstractProject) project.getParent());
-        }
-    }
-
-    /**
      * True if the operation was successful.
      *
      * @param abstractBuild build
@@ -93,8 +76,7 @@ public class SvnTagPlugin {
             return true;
         }
 
-        AbstractProject<?, ?> rootProject =
-                getRootProject(abstractBuild.getProject());
+        AbstractProject<?, ?> rootProject = abstractBuild.getProject().getRootProject();
 
         Map<String, String> env;
 

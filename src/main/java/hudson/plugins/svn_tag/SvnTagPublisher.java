@@ -6,8 +6,10 @@ import javax.servlet.ServletException;
 
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
 import hudson.model.Descriptor;
+import hudson.tasks.BuildStepDescriptor;
 import static hudson.plugins.svn_tag.SvnTagPlugin.CONFIG_PREFIX;
 import static hudson.plugins.svn_tag.SvnTagPlugin.DESCRIPTION;
 import hudson.tasks.Publisher;
@@ -95,7 +97,7 @@ public class SvnTagPublisher extends Publisher {
     }
 
     public static final class SvnTagDescriptorImpl
-            extends Descriptor<Publisher> {
+            extends BuildStepDescriptor<Publisher> {
 
         private String defaultTagBaseURL = null;
 
@@ -220,5 +222,11 @@ public class SvnTagPublisher extends Publisher {
                 }
             }.process();
         }
+
+		@Override
+		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+			// need to check if this is a subversion project??
+			return true;
+		}
     }
 }
