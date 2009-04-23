@@ -8,7 +8,7 @@
   </parent>
   <artifactId>svn-tag</artifactId>
   <name>Hudson Subversion Tagging Plug-in</name>
-  <url>http://hudson.gotdns.com/wiki/display/HUDSON/Subversion+Tagging+Plugin</url>
+  <url>http://wiki.hudson-ci.org/display/HUDSON/Subversion+Tagging+Plugin</url>
   <packaging>hpi</packaging>
   <version>1.11-SNAPSHOT</version>
   <developers>
