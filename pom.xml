@@ -10,7 +10,7 @@
   <name>Hudson Subversion Tagging Plug-in</name>
   <url>http://wiki.hudson-ci.org/display/HUDSON/Subversion+Tagging+Plugin</url>
   <packaging>hpi</packaging>
-  <version>1.11</version>
+  <version>1.12-SNAPSHOT</version>
   <developers>
     <developer>
       <name>Kenji Nakamura</name>
