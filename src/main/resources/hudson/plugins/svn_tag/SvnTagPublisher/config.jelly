@@ -16,4 +16,22 @@
         <f:textbox name="svntag.tagComment" value="${tagComment}"
                  checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagCommentCheck?value='+escape(this.value)" />
     </f:entry>
+
+    <f:entry title="Tag Mkdir Comment" help="/plugin/svn-tag/help-config-TagComment.html">
+        <j:set var="tagMkdirComment" value="${instance.getTagMkdirComment()}"/>
+        <j:if test="${instance.getTagMkdirComment() == null}">
+            <j:set var="tagMkdirComment" value="${descriptor.getTagMkdirComment()}"/>
+        </j:if>
+        <f:textbox name="svntag.tagMkdirComment" value="${tagMkdirComment}"
+                   checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagMkdirCommentCheck?value='+escape(this.value)" />
+    </f:entry>
+
+    <f:entry title="Tag Delete Comment" help="/plugin/svn-tag/help-config-TagComment.html">
+        <j:set var="tagDeleteComment" value="${instance.getTagDeleteComment()}"/>
+        <j:if test="${instance.getTagDeleteComment() == null}">
+            <j:set var="tagDeleteComment" value="${descriptor.getTagDeleteComment()}"/>
+        </j:if>
+        <f:textbox name="svntag.tagDeleteComment" value="${tagDeleteComment}"
+                   checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagDeleteCommentCheck?value='+escape(this.value)" />
+    </f:entry>
 </j:jelly>

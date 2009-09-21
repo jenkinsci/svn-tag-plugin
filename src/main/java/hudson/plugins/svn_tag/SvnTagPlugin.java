@@ -33,7 +33,10 @@ import java.util.Map;
  *
  * @author Kenji Nakamura
  */
-@SuppressWarnings({"UtilityClass", "ImplicitCallToSuper", "MethodReturnOfConcreteClass", "MethodParameterOfConcreteClass", "InstanceofInterfaces", "unchecked"})
+@SuppressWarnings(
+        {"UtilityClass", "ImplicitCallToSuper", "MethodReturnOfConcreteClass",
+                "MethodParameterOfConcreteClass", "InstanceofInterfaces",
+                "unchecked"})
 public class SvnTagPlugin {
 
     /**
@@ -63,11 +66,14 @@ public class SvnTagPlugin {
      * @param tagComment    tag comment
      * @return true if the operation was successful
      */
-    @SuppressWarnings({"FeatureEnvy", "UnusedDeclaration", "TypeMayBeWeakened", "LocalVariableOfConcreteClass"})
+    @SuppressWarnings({"FeatureEnvy", "UnusedDeclaration", "TypeMayBeWeakened",
+            "LocalVariableOfConcreteClass"})
     public static boolean perform(AbstractBuild abstractBuild,
                                   Launcher launcher,
                                   BuildListener buildListener,
-                                  String tagBaseURLStr, String tagComment) {
+                                  String tagBaseURLStr, String tagComment,
+                                  String tagMkdirComment,
+                                  String tagDeleteComment) {
         PrintStream logger = buildListener.getLogger();
 
         if (!Result.SUCCESS.equals(abstractBuild.getResult())) {
@@ -76,7 +82,8 @@ public class SvnTagPlugin {
             return true;
         }
 
-        AbstractProject<?, ?> rootProject = abstractBuild.getProject().getRootProject();
+        AbstractProject<?, ?> rootProject =
+                abstractBuild.getProject().getRootProject();
 
         Map<String, String> env;
 
@@ -106,20 +113,24 @@ public class SvnTagPlugin {
         try {
             revisions = parseRevisionFile(abstractBuild);
         } catch (IOException e) {
-            logger.println("Failed to parse revision.txt. " + e.getLocalizedMessage());
+            logger.println(
+                    "Failed to parse revision.txt. " + e.getLocalizedMessage());
             return false;
         }
 
-        ISVNAuthenticationProvider sap = scm.getDescriptor().createAuthenticationProvider();
+        ISVNAuthenticationProvider sap =
+                scm.getDescriptor().createAuthenticationProvider();
         if (sap == null) {
             logger.println("Subversion authentication info is not set.");
             return false;
         }
 
-        ISVNAuthenticationManager sam = SVNWCUtil.createDefaultAuthenticationManager();
+        ISVNAuthenticationManager sam =
+                SVNWCUtil.createDefaultAuthenticationManager();
         sam.setAuthenticationProvider(sap);
 
-        String emptyDirName = System.getProperty("java.io.tmpdir") + "/hudson/svn_tag/emptyDir";
+        String emptyDirName = System.getProperty("java.io.tmpdir") +
+                "/hudson/svn_tag/emptyDir";
         File emptyDir = new File(emptyDirName);
         try {
             if (emptyDir.exists()) {
@@ -128,7 +139,9 @@ public class SvnTagPlugin {
             FileUtils.forceMkdir(emptyDir);
             FileUtils.forceDeleteOnExit(emptyDir);
         } catch (IOException e) {
-            logger.println("Failed to create an empty directory used to create intermediate directories." + e.getLocalizedMessage());
+            logger.println(
+                    "Failed to create an empty directory used to create intermediate directories." +
+                            e.getLocalizedMessage());
             return false;
         }
 
@@ -138,44 +151,61 @@ public class SvnTagPlugin {
         for (SubversionSCM.ModuleLocation ml : moduleLocations) {
             logger.println("moduleLocation: Remote ->" + ml.remote);
 
-            List locationPathElements = Arrays.asList(StringUtils.split(ml.remote, "/"));
+            List locationPathElements =
+                    Arrays.asList(StringUtils.split(ml.remote, "/"));
 
-            String evaledTagBaseURLStr = evalGroovyExpression(env, tagBaseURLStr, locationPathElements);
+            String evaledTagBaseURLStr =
+                    evalGroovyExpression(env, tagBaseURLStr,
+                            locationPathElements);
 
             URI repoURI;
             try {
                 repoURI = new URI(ml.remote);
             } catch (URISyntaxException e) {
-                logger.println("Failed to parse SVN repo URL. " + e.getLocalizedMessage());
+                logger.println("Failed to parse SVN repo URL. " +
+                        e.getLocalizedMessage());
                 return false;
             }
 
             SVNURL parsedTagBaseURL = null;
             SVNURL parsedTagBaseParentURL = null;
             try {
-                parsedTagBaseURL = SVNURL.parseURIDecoded(repoURI.resolve(evaledTagBaseURLStr).toString());
-                parsedTagBaseParentURL = SVNURL.parseURIDecoded(new URI(parsedTagBaseURL.toString() + "/../").normalize().toString());
-                logger.println("Tag Base URL: '" + parsedTagBaseURL.toString() + "'.");
+                parsedTagBaseURL = SVNURL.parseURIEncoded(
+                        repoURI.resolve(evaledTagBaseURLStr).toString());
+                parsedTagBaseParentURL = SVNURL.parseURIEncoded(
+                        new URI(parsedTagBaseURL.toString() + "/../")
+                                .normalize().toString());
+                logger.println(
+                        "Tag Base URL: '" + parsedTagBaseURL.toString() + "'.");
             } catch (SVNException e) {
-                logger.println("Failed to parse tag base URL '" + evaledTagBaseURLStr + "'. " + e.getLocalizedMessage());
+                logger.println(
+                        "Failed to parse tag base URL '" + evaledTagBaseURLStr +
+                                "'. " + e.getLocalizedMessage());
             } catch (URISyntaxException e) {
-                logger.println("Failed to parse tag base URL '" + evaledTagBaseURLStr + "'. " + e.getLocalizedMessage());
+                logger.println(
+                        "Failed to parse tag base URL '" + evaledTagBaseURLStr +
+                                "'. " + e.getLocalizedMessage());
             }
 
             try {
+                String evalDeleteComment = evalGroovyExpression(
+                        (Map<String, String>) abstractBuild.getEnvVars(),
+                        tagDeleteComment, locationPathElements);
                 SVNCommitInfo deleteInfo =
                         commitClient.doDelete(new SVNURL[]{parsedTagBaseURL},
-                                "Delete old tag by SvnTag Hudson plugin.");
+                                evalDeleteComment);
                 SVNErrorMessage deleteErrMsg = deleteInfo.getErrorMessage();
 
                 if (null != deleteErrMsg) {
                     logger.println(deleteErrMsg.getMessage());
                 } else {
-                    logger.println("Delete old tag " + evaledTagBaseURLStr + ".");
+                    logger.println(
+                            "Delete old tag " + evaledTagBaseURLStr + ".");
                 }
 
             } catch (SVNException e) {
-                logger.println("There was no old tag at " + evaledTagBaseURLStr + ".");
+                logger.println(
+                        "There was no old tag at " + evaledTagBaseURLStr + ".");
             }
 
             SVNCommitInfo mkdirInfo;
@@ -184,9 +214,16 @@ public class SvnTagPlugin {
                 // Import an empty directory to create intermediate directories.
 //                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
 //                        "Created by SvnTag Hudson plugin.");
-                mkdirInfo = commitClient.doImport(emptyDir, parsedTagBaseParentURL, "Created by SvnTag Hudson plugin.", false);
+
+                String evalMkdirComment = evalGroovyExpression(
+                        (Map<String, String>) abstractBuild.getEnvVars(),
+                        tagMkdirComment, locationPathElements);
+                mkdirInfo = commitClient
+                        .doImport(emptyDir, parsedTagBaseParentURL,
+                                evalMkdirComment, false);
             } catch (SVNException e) {
-                logger.println("Failed to create a directory '" + parsedTagBaseParentURL.toString() + "'.");
+                logger.println("Failed to create a directory '" +
+                        parsedTagBaseParentURL.toString() + "'.");
                 return false;
             }
             SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
@@ -200,11 +237,14 @@ public class SvnTagPlugin {
             SVNCopyClient copyClient = new SVNCopyClient(sam, null);
 
             try {
-                String evalComment = evalGroovyExpression((Map<String, String>) abstractBuild.getEnvVars(), tagComment, locationPathElements);
+                String evalComment = evalGroovyExpression(
+                        (Map<String, String>) abstractBuild.getEnvVars(),
+                        tagComment, locationPathElements);
 
                 SVNCommitInfo commitInfo =
                         copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
-                                SVNRevision.create(Long.valueOf(revisions.get(ml.remote))),
+                                SVNRevision.create(
+                                        Long.valueOf(revisions.get(ml.remote))),
                                 parsedTagBaseURL, false,
                                 false, evalComment);
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
@@ -229,12 +269,15 @@ public class SvnTagPlugin {
     }
 
     @SuppressWarnings({"StaticMethodOnlyUsedInOneClass", "TypeMayBeWeakened"})
-    static String evalGroovyExpression(Map<String, String> env, String evalText, List locationPathElements) {
+    static String evalGroovyExpression(Map<String, String> env, String evalText,
+                                       List locationPathElements) {
         Binding binding = new Binding();
         binding.setVariable("env", env);
         binding.setVariable("sys", System.getProperties());
         if (locationPathElements == null) {
-            binding.setVariable("repoURL", Arrays.asList(StringUtils.split("http://svn.example.com/path1/path2/path3/path4/path5/path6/path7/path8/path9/path10"), "/"));
+            binding.setVariable("repoURL", Arrays.asList(StringUtils.split(
+                    "http://svn.example.com/path1/path2/path3/path4/path5/path6/path7/path8/path9/path10"),
+                    "/"));
         } else {
             binding.setVariable("repoURL", locationPathElements);
         }
@@ -258,8 +301,10 @@ public class SvnTagPlugin {
      */
     /*package*/
     @SuppressWarnings({"NestedAssignment"})
-    static Map<String, Long> parseRevisionFile(AbstractBuild build) throws IOException {
-        Map<String, Long> revisions = new HashMap<String, Long>(); // module -> revision
+    static Map<String, Long> parseRevisionFile(AbstractBuild build)
+            throws IOException {
+        Map<String, Long> revisions =
+                new HashMap<String, Long>(); // module -> revision
         // read the revision file of the last build
         File file = SubversionSCM.getRevisionFile(build);
         if (!file.exists()) // nothing to compare against
@@ -276,7 +321,8 @@ public class SvnTagPlugin {
                     continue;   // invalid line?
                 }
                 try {
-                    revisions.put(line.substring(0, index), Long.parseLong(line.substring(index + 1)));
+                    revisions.put(line.substring(0, index),
+                            Long.parseLong(line.substring(index + 1)));
                 } catch (NumberFormatException e) {
                     // perhaps a corrupted line. ignore
                 }

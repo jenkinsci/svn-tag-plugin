@@ -44,6 +44,10 @@ public class SvnTagPublisher extends Publisher {
 
     private String tagComment = null;
 
+    private String tagMkdirComment = null;
+
+    private String tagDeleteComment = null;
+
     /**
      * Returns the tag base URL value.
      *
@@ -69,8 +73,34 @@ public class SvnTagPublisher extends Publisher {
         }
     }
 
+    public String getTagMkdirComment() {
+        if ((this.tagMkdirComment == null) ||
+                (this.tagMkdirComment.length() == 0)) {
+            return DESCRIPTOR.getTagMkdirComment();
+        } else {
+            return this.tagMkdirComment;
+        }
+    }
+
+    public String getTagDeleteComment() {
+        if ((this.tagDeleteComment == null) ||
+                (this.tagDeleteComment.length() == 0)) {
+            return DESCRIPTOR.getTagDeleteComment();
+        } else {
+            return this.tagDeleteComment;
+        }
+    }
+
     public void setTagComment(String tagComment) {
         this.tagComment = tagComment;
+    }
+
+    public void setTagMkdirComment(String tagMkdirComment) {
+        this.tagMkdirComment = tagMkdirComment;
+    }
+
+    public void setTagDeleteComment(String tagDeleteComment) {
+        this.tagDeleteComment = tagDeleteComment;
     }
 
     @Override
@@ -79,7 +109,9 @@ public class SvnTagPublisher extends Publisher {
                            BuildListener buildListener)
             throws InterruptedException, IOException {
         return SvnTagPlugin.perform(abstractBuild, launcher, buildListener,
-                this.tagBaseURL, this.tagComment);
+                this.getTagBaseURL(), this.getTagComment(),
+                this.getTagMkdirComment(),
+                this.getTagDeleteComment());
     }
 
     @Override
@@ -103,13 +135,21 @@ public class SvnTagPublisher extends Publisher {
 
         private String tagComment;
 
+        private String tagMkdirComment;
+
+        private String tagDeleteComment;
+
         /**
          * Creates a new SvnTagDescriptorImpl object.
          */
         private SvnTagDescriptorImpl() {
             super(SvnTagPublisher.class);
-            this.defaultTagBaseURL = "http://subversion_host/project/tags/last-successful/${env['JOB_NAME']}";
-            this.tagComment = "Tagged by Hudson svn-tag plugin. Build:${env['BUILD_TAG']}.";
+            this.defaultTagBaseURL =
+                    "http://subversion_host/project/tags/last-successful/${env['JOB_NAME']}";
+            this.tagComment =
+                    "Tagged by Hudson svn-tag plugin. Build:${env['BUILD_TAG']}.";
+            this.tagDeleteComment = "Delete old tag by SvnTag Hudson plugin.";
+            this.tagMkdirComment = "Created by SvnTag Hudson plugin.";
             load();
         }
 
@@ -131,6 +171,8 @@ public class SvnTagPublisher extends Publisher {
             SvnTagPublisher p = new SvnTagPublisher();
             p.setTagBaseURL(jsonObject.getString("tagBaseURL"));
             p.setTagComment(jsonObject.getString("tagComment"));
+            p.setTagMkdirComment(jsonObject.getString("tagMkdirComment"));
+            p.setTagDeleteComment(jsonObject.getString("tagDeleteComment"));
             return p;
         }
 
@@ -143,6 +185,12 @@ public class SvnTagPublisher extends Publisher {
                             "defaultTagBaseURL");
             this.tagComment =
                     staplerRequest.getParameter(CONFIG_PREFIX + "tagComment");
+            this.tagMkdirComment =
+                    staplerRequest
+                            .getParameter(CONFIG_PREFIX + "tagMkdirComment");
+            this.tagDeleteComment =
+                    staplerRequest
+                            .getParameter(CONFIG_PREFIX + "tagDeleteComment");
             save();
 
             return super.configure(staplerRequest);
@@ -162,10 +210,13 @@ public class SvnTagPublisher extends Publisher {
                         error("Please specify URL.");
                     }
                     try {
-                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), tagBaseURLString, null);
+                        SvnTagPlugin.evalGroovyExpression(
+                                new HashMap<String, String>(), tagBaseURLString,
+                                null);
                         ok();
                     } catch (CompilationFailedException e) {
-                        error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());
+                        error("Check if quotes, braces, or brackets are balanced. " +
+                                e.getMessage());
                     }
                 }
             }.process();
@@ -207,26 +258,86 @@ public class SvnTagPublisher extends Publisher {
             this.tagComment = tagComment;
         }
 
+        public String getTagMkdirComment() {
+            return tagMkdirComment;
+        }
+
+        public void setTagMkdirComment(String tagMkdirComment) {
+            this.tagMkdirComment = tagMkdirComment;
+        }
+
+        public String getTagDeleteComment() {
+            return tagDeleteComment;
+        }
+
+        public void setTagDeleteComment(String tagDeleteComment) {
+            this.tagDeleteComment = tagDeleteComment;
+        }
+
         public void doTagCommentCheck(StaplerRequest req, StaplerResponse rsp,
-                                      @QueryParameter("value") final String value)
+                                      @QueryParameter("value")
+                                      final String value)
                 throws IOException, ServletException {
             new FormFieldValidator(req, rsp, false) {
                 @Override
                 protected void check() throws IOException, ServletException {
                     try {
-                        SvnTagPlugin.evalGroovyExpression(new HashMap<String, String>(), value, null);
+                        SvnTagPlugin.evalGroovyExpression(
+                                new HashMap<String, String>(), value, null);
                         ok();
                     } catch (CompilationFailedException e) {
-                        error("Check if quotes, braces, or brackets are balanced. " + e.getMessage());
+                        error("Check if quotes, braces, or brackets are balanced. " +
+                                e.getMessage());
                     }
                 }
             }.process();
         }
 
-		@Override
-		public boolean isApplicable(Class<? extends AbstractProject> jobType) {
-			// need to check if this is a subversion project??
-			return true;
-		}
+        public void doTagMkdirCommentCheck(StaplerRequest req,
+                                           StaplerResponse rsp,
+                                           @QueryParameter("value")
+                                           final String value)
+                throws IOException, ServletException {
+            new FormFieldValidator(req, rsp, false) {
+                @Override
+                protected void check() throws IOException, ServletException {
+                    try {
+                        SvnTagPlugin.evalGroovyExpression(
+                                new HashMap<String, String>(), value, null);
+                        ok();
+                    } catch (CompilationFailedException e) {
+                        error("Check if quotes, braces, or brackets are balanced. " +
+                                e.getMessage());
+                    }
+                }
+            }.process();
+        }
+
+        public void doTagDeleteCommentCheck(StaplerRequest req,
+                                            StaplerResponse rsp,
+                                            @QueryParameter("value")
+                                            final String value)
+                throws IOException, ServletException {
+            new FormFieldValidator(req, rsp, false) {
+                @Override
+                protected void check() throws IOException, ServletException {
+                    try {
+                        SvnTagPlugin.evalGroovyExpression(
+                                new HashMap<String, String>(), value, null);
+                        ok();
+                    } catch (CompilationFailedException e) {
+                        error("Check if quotes, braces, or brackets are balanced. " +
+                                e.getMessage());
+                    }
+                }
+            }.process();
+        }
+
+        @Override
+        public boolean isApplicable(Class<? extends AbstractProject> jobType) {
+            // need to check if this is a subversion project??
+            return true;
+        }
+
     }
 }
