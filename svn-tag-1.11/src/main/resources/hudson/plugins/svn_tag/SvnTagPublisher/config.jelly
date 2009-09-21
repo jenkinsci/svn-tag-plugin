@@ -1,0 +1,19 @@
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry title="Tag Base URL" help="${rootURL}/plugin/svn-tag/help-config-TagBaseURL.html">
+    <j:set var="tagBaseURL" value="${instance.getTagBaseURL()}"/>
+    <j:if test="${instance.getTagBaseURL() == null}">
+        <j:set var="tagBaseURL" value="${descriptor.getDefaultTagBaseURL()}"/>
+    </j:if>
+      <f:textbox name="svntag.tagBaseURL" value="${tagBaseURL}"
+                 checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagBaseURLCheck?value='+escape(this.value)" />
+    </f:entry>
+    <f:entry title="Tag Comment" help="${rootURL}/plugin/svn-tag/help-config-TagComment.html">
+        <j:set var="tagComment" value="${instance.getTagComment()}"/>
+        <j:if test="${instance.getTagComment() == null}">
+            <j:set var="tagComment" value="${descriptor.getTagComment()}"/>
+        </j:if>
+        <f:textbox name="svntag.tagComment" value="${tagComment}"
+                 checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagCommentCheck?value='+escape(this.value)" />
+    </f:entry>
+</j:jelly>
