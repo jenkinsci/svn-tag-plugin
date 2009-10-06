@@ -1,24 +1,25 @@
 package hudson.plugins.svn_tag;
 
+import hudson.tasks.BuildStepMonitor;
 import java.io.IOException;
 import java.util.HashMap;
-import javax.servlet.ServletException;
 
+import hudson.Extension;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
-import hudson.model.Descriptor;
 import hudson.tasks.BuildStepDescriptor;
+import hudson.tasks.Notifier;
 import static hudson.plugins.svn_tag.SvnTagPlugin.CONFIG_PREFIX;
 import static hudson.plugins.svn_tag.SvnTagPlugin.DESCRIPTION;
 import hudson.tasks.Publisher;
-import hudson.util.FormFieldValidator;
+import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.kohsuke.stapler.QueryParameter;
 import org.kohsuke.stapler.StaplerRequest;
-import org.kohsuke.stapler.StaplerResponse;
 
 
 /**
@@ -29,11 +30,11 @@ import org.kohsuke.stapler.StaplerResponse;
  * @author Kenji Nakamura
  */
 @SuppressWarnings({"PublicMethodNotExposedInInterface"})
-public class SvnTagPublisher extends Publisher {
+public class SvnTagPublisher extends Notifier {
     /**
      * SvnTag descriptor.
      */
-    @SuppressWarnings({"StaticVariableOfConcreteClass"})
+    @Extension @SuppressWarnings({"StaticVariableOfConcreteClass"})
     public static final SvnTagDescriptorImpl DESCRIPTOR =
             new SvnTagDescriptorImpl();
 
@@ -103,6 +104,10 @@ public class SvnTagPublisher extends Publisher {
         this.tagDeleteComment = tagDeleteComment;
     }
 
+    public BuildStepMonitor getRequiredMonitorService() {
+        return BuildStepMonitor.BUILD;
+    }
+
     @Override
     public boolean perform(AbstractBuild<?, ?> abstractBuild,
                            Launcher launcher,
@@ -124,7 +129,8 @@ public class SvnTagPublisher extends Publisher {
      *
      * @return the descriptor value.
      */
-    public Descriptor<Publisher> getDescriptor() {
+    @Override
+    public BuildStepDescriptor<Publisher> getDescriptor() {
         return DESCRIPTOR;
     }
 
@@ -178,7 +184,7 @@ public class SvnTagPublisher extends Publisher {
 
         @SuppressWarnings({"deprecation"})
         @Override
-        public boolean configure(StaplerRequest staplerRequest)
+        public boolean configure(StaplerRequest staplerRequest, JSONObject formData)
                 throws FormException {
             this.defaultTagBaseURL =
                     staplerRequest.getParameter(CONFIG_PREFIX +
@@ -193,33 +199,21 @@ public class SvnTagPublisher extends Publisher {
                             .getParameter(CONFIG_PREFIX + "tagDeleteComment");
             save();
 
-            return super.configure(staplerRequest);
+            return super.configure(staplerRequest, formData);
         }
 
-        public void doTagBaseURLCheck(final StaplerRequest req,
-                                      StaplerResponse rsp)
-                throws IOException, ServletException {
-            new FormFieldValidator(req, rsp, false) {
-                @Override
-                protected void check() throws IOException,
-                        ServletException {
-                    String tagBaseURLString = req.getParameter("value");
-
-                    if ((tagBaseURLString == null) ||
-                            (tagBaseURLString.length() == 0)) {
-                        error("Please specify URL.");
-                    }
-                    try {
-                        SvnTagPlugin.evalGroovyExpression(
-                                new HashMap<String, String>(), tagBaseURLString,
-                                null);
-                        ok();
-                    } catch (CompilationFailedException e) {
-                        error("Check if quotes, braces, or brackets are balanced. " +
-                                e.getMessage());
-                    }
-                }
-            }.process();
+        public FormValidation doTagBaseURLCheck(@QueryParameter final String value) {
+            if (Util.fixEmptyAndTrim(value) == null) {
+                return FormValidation.error("Please specify URL.");
+            }
+            try {
+                SvnTagPlugin.evalGroovyExpression(
+                        new HashMap<String, String>(), value, null);
+                return FormValidation.ok();
+            } catch (CompilationFailedException e) {
+                return FormValidation.error("Check if quotes, braces, or brackets are balanced. " +
+                        e.getMessage());
+            }
         }
 
         /**
@@ -274,63 +268,37 @@ public class SvnTagPublisher extends Publisher {
             this.tagDeleteComment = tagDeleteComment;
         }
 
-        public void doTagCommentCheck(StaplerRequest req, StaplerResponse rsp,
-                                      @QueryParameter("value")
-                                      final String value)
-                throws IOException, ServletException {
-            new FormFieldValidator(req, rsp, false) {
-                @Override
-                protected void check() throws IOException, ServletException {
-                    try {
-                        SvnTagPlugin.evalGroovyExpression(
-                                new HashMap<String, String>(), value, null);
-                        ok();
-                    } catch (CompilationFailedException e) {
-                        error("Check if quotes, braces, or brackets are balanced. " +
-                                e.getMessage());
-                    }
-                }
-            }.process();
+        public FormValidation doTagCommentCheck(@QueryParameter final String value) {
+            try {
+                SvnTagPlugin.evalGroovyExpression(
+                        new HashMap<String, String>(), value, null);
+                return FormValidation.ok();
+            } catch (CompilationFailedException e) {
+                return FormValidation.error("Check if quotes, braces, or brackets are balanced. " +
+                        e.getMessage());
+            }
         }
 
-        public void doTagMkdirCommentCheck(StaplerRequest req,
-                                           StaplerResponse rsp,
-                                           @QueryParameter("value")
-                                           final String value)
-                throws IOException, ServletException {
-            new FormFieldValidator(req, rsp, false) {
-                @Override
-                protected void check() throws IOException, ServletException {
-                    try {
-                        SvnTagPlugin.evalGroovyExpression(
-                                new HashMap<String, String>(), value, null);
-                        ok();
-                    } catch (CompilationFailedException e) {
-                        error("Check if quotes, braces, or brackets are balanced. " +
-                                e.getMessage());
-                    }
-                }
-            }.process();
+        public FormValidation doTagMkdirCommentCheck(@QueryParameter final String value) {
+            try {
+                SvnTagPlugin.evalGroovyExpression(
+                        new HashMap<String, String>(), value, null);
+                return FormValidation.ok();
+            } catch (CompilationFailedException e) {
+                return FormValidation.error("Check if quotes, braces, or brackets are balanced. " +
+                        e.getMessage());
+            }
         }
 
-        public void doTagDeleteCommentCheck(StaplerRequest req,
-                                            StaplerResponse rsp,
-                                            @QueryParameter("value")
-                                            final String value)
-                throws IOException, ServletException {
-            new FormFieldValidator(req, rsp, false) {
-                @Override
-                protected void check() throws IOException, ServletException {
-                    try {
-                        SvnTagPlugin.evalGroovyExpression(
-                                new HashMap<String, String>(), value, null);
-                        ok();
-                    } catch (CompilationFailedException e) {
-                        error("Check if quotes, braces, or brackets are balanced. " +
-                                e.getMessage());
-                    }
-                }
-            }.process();
+        public FormValidation doTagDeleteCommentCheck(@QueryParameter final String value) {
+            try {
+                SvnTagPlugin.evalGroovyExpression(
+                        new HashMap<String, String>(), value, null);
+                return FormValidation.ok();
+            } catch (CompilationFailedException e) {
+                return FormValidation.error("Check if quotes, braces, or brackets are balanced. " +
+                        e.getMessage());
+            }
         }
 
         @Override

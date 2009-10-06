@@ -95,7 +95,13 @@ public class SvnTagPlugin {
         }
 
         SubversionSCM scm = SubversionSCM.class.cast(rootProject.getScm());
-        env = abstractBuild.getEnvVars();
+        try {
+            env = abstractBuild.getEnvironment(buildListener);
+        } catch (Exception e) {
+            logger.println(
+                    "Failed to get environment. " + e.getLocalizedMessage());
+            return false;
+        }
 
         // Let SubversionSCM fill revision number.
         // It is guaranteed for getBuilds() return the latest build (i.e.
@@ -189,8 +195,7 @@ public class SvnTagPlugin {
 
             try {
                 String evalDeleteComment = evalGroovyExpression(
-                        (Map<String, String>) abstractBuild.getEnvVars(),
-                        tagDeleteComment, locationPathElements);
+                        env, tagDeleteComment, locationPathElements);
                 SVNCommitInfo deleteInfo =
                         commitClient.doDelete(new SVNURL[]{parsedTagBaseURL},
                                 evalDeleteComment);
@@ -210,14 +215,14 @@ public class SvnTagPlugin {
 
             SVNCommitInfo mkdirInfo;
             try {
-                // commtClient.doMkDir doesn't support "-parent" option available in svn command.
+                // commitClient.doMkDir doesn't support "-parent" option available in svn command.
+                // TODO: now doMkDir does have a form with makeParents flag.. use that.
                 // Import an empty directory to create intermediate directories.
 //                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
 //                        "Created by SvnTag Hudson plugin.");
 
                 String evalMkdirComment = evalGroovyExpression(
-                        (Map<String, String>) abstractBuild.getEnvVars(),
-                        tagMkdirComment, locationPathElements);
+                        env, tagMkdirComment, locationPathElements);
                 mkdirInfo = commitClient
                         .doImport(emptyDir, parsedTagBaseParentURL,
                                 evalMkdirComment, false);
@@ -238,8 +243,7 @@ public class SvnTagPlugin {
 
             try {
                 String evalComment = evalGroovyExpression(
-                        (Map<String, String>) abstractBuild.getEnvVars(),
-                        tagComment, locationPathElements);
+                        env, tagComment, locationPathElements);
 
                 SVNCommitInfo commitInfo =
                         copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
