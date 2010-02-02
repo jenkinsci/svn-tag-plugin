@@ -5,12 +5,12 @@ import groovy.lang.GroovyShell;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.scm.SubversionSCM;
-import org.apache.commons.io.FileUtils;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.tmatesoft.svn.core.SVNCommitInfo;
 import org.tmatesoft.svn.core.SVNErrorMessage;
 import org.tmatesoft.svn.core.SVNException;
+import org.tmatesoft.svn.core.SVNProperties;
 import org.tmatesoft.svn.core.SVNURL;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
@@ -135,22 +135,6 @@ public class SvnTagPlugin {
                 SVNWCUtil.createDefaultAuthenticationManager();
         sam.setAuthenticationProvider(sap);
 
-        String emptyDirName = System.getProperty("java.io.tmpdir") +
-                "/hudson/svn_tag/emptyDir";
-        File emptyDir = new File(emptyDirName);
-        try {
-            if (emptyDir.exists()) {
-                FileUtils.forceDelete(emptyDir);
-            }
-            FileUtils.forceMkdir(emptyDir);
-            FileUtils.forceDeleteOnExit(emptyDir);
-        } catch (IOException e) {
-            logger.println(
-                    "Failed to create an empty directory used to create intermediate directories." +
-                            e.getLocalizedMessage());
-            return false;
-        }
-
         SVNCommitClient commitClient = new SVNCommitClient(sam, null);
 
 
@@ -215,17 +199,11 @@ public class SvnTagPlugin {
 
             SVNCommitInfo mkdirInfo;
             try {
-                // commitClient.doMkDir doesn't support "-parent" option available in svn command.
-                // TODO: now doMkDir does have a form with makeParents flag.. use that.
-                // Import an empty directory to create intermediate directories.
-//                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseURL},
-//                        "Created by SvnTag Hudson plugin.");
-
+                // Create intermediate directories.
                 String evalMkdirComment = evalGroovyExpression(
                         env, tagMkdirComment, locationPathElements);
-                mkdirInfo = commitClient
-                        .doImport(emptyDir, parsedTagBaseParentURL,
-                                evalMkdirComment, false);
+                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseParentURL},
+                                evalMkdirComment, new SVNProperties(), true);
             } catch (SVNException e) {
                 logger.println("Failed to create a directory '" +
                         parsedTagBaseParentURL.toString() + "'.");
