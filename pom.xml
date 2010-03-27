@@ -10,7 +10,7 @@
   <name>Hudson Subversion Tagging Plugin</name>
   <url>http://wiki.hudson-ci.org/display/HUDSON/Subversion+Tagging+Plugin</url>
   <packaging>hpi</packaging>
-  <version>1.14</version>
+  <version>1.15-SNAPSHOT</version>
   <developers>
     <developer>
       <id>k2nakamura</id>
@@ -42,10 +42,4 @@
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <scm>
-    <connection>scm:svn:https://guest@svn.dev.java.net/svn/hudson/tags/svn-tag-1.14</connection>
-    <developerConnection>scm:svn:https://svn.dev.java.net/svn/hudson/tags/svn-tag-1.14</developerConnection>
-    <url>https://hudson.dev.java.net/source/browse/hudson/tags/svn-tag-1.14</url>
-  </scm>
 </project>
