@@ -16,6 +16,7 @@ import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
 import org.tmatesoft.svn.core.wc.SVNCommitClient;
 import org.tmatesoft.svn.core.wc.SVNCopyClient;
+import org.tmatesoft.svn.core.wc.SVNCopySource;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
 
@@ -35,20 +36,8 @@ import java.util.Map;
  */
 @SuppressWarnings(
         {"UtilityClass", "ImplicitCallToSuper", "MethodReturnOfConcreteClass",
-                "MethodParameterOfConcreteClass", "InstanceofInterfaces",
-                "unchecked"})
+                "MethodParameterOfConcreteClass", "InstanceofInterfaces"})
 public class SvnTagPlugin {
-
-    /**
-     * Description appeared in configuration screen.
-     */
-    public static final String DESCRIPTION =
-            "Perform Subversion tagging on successful build";
-
-    /**
-     * The prefix to identify jelly variables for this plugin.
-     */
-    public static final String CONFIG_PREFIX = "svntag.";
 
     /**
      * Creates a new SvnTagPlugin object.
@@ -68,17 +57,15 @@ public class SvnTagPlugin {
      */
     @SuppressWarnings({"FeatureEnvy", "UnusedDeclaration", "TypeMayBeWeakened",
             "LocalVariableOfConcreteClass"})
-    public static boolean perform(AbstractBuild abstractBuild,
+    public static boolean perform(AbstractBuild<?,?> abstractBuild,
                                   Launcher launcher,
                                   BuildListener buildListener,
                                   String tagBaseURLStr, String tagComment,
-                                  String tagMkdirComment,
                                   String tagDeleteComment) {
         PrintStream logger = buildListener.getLogger();
 
         if (!Result.SUCCESS.equals(abstractBuild.getResult())) {
-            logger.println("No Subversion tagging for unsuccessful build. ");
-
+            logger.println(Messages.UnsuccessfulBuild());
             return true;
         }
 
@@ -88,9 +75,7 @@ public class SvnTagPlugin {
         Map<String, String> env;
 
         if (!(rootProject.getScm() instanceof SubversionSCM)) {
-            logger.println("SvnTag plugin doesn't support tagging for SCM " +
-                    rootProject.getScm().toString() + ".");
-
+            logger.println(Messages.NotSubversion(rootProject.getScm().toString()));
             return true;
         }
 
@@ -158,20 +143,12 @@ public class SvnTagPlugin {
             }
 
             SVNURL parsedTagBaseURL = null;
-            SVNURL parsedTagBaseParentURL = null;
             try {
                 parsedTagBaseURL = SVNURL.parseURIEncoded(
                         repoURI.resolve(evaledTagBaseURLStr).toString());
-                parsedTagBaseParentURL = SVNURL.parseURIEncoded(
-                        new URI(parsedTagBaseURL.toString() + "/../")
-                                .normalize().toString());
                 logger.println(
                         "Tag Base URL: '" + parsedTagBaseURL.toString() + "'.");
             } catch (SVNException e) {
-                logger.println(
-                        "Failed to parse tag base URL '" + evaledTagBaseURLStr +
-                                "'. " + e.getLocalizedMessage());
-            } catch (URISyntaxException e) {
                 logger.println(
                         "Failed to parse tag base URL '" + evaledTagBaseURLStr +
                                 "'. " + e.getLocalizedMessage());
@@ -188,33 +165,11 @@ public class SvnTagPlugin {
                 if (null != deleteErrMsg) {
                     logger.println(deleteErrMsg.getMessage());
                 } else {
-                    logger.println(
-                            "Delete old tag " + evaledTagBaseURLStr + ".");
+                    logger.println(Messages.DeleteOldTag(evaledTagBaseURLStr));
                 }
 
             } catch (SVNException e) {
-                logger.println(
-                        "There was no old tag at " + evaledTagBaseURLStr + ".");
-            }
-
-            SVNCommitInfo mkdirInfo;
-            try {
-                // Create intermediate directories.
-                String evalMkdirComment = evalGroovyExpression(
-                        env, tagMkdirComment, locationPathElements);
-                mkdirInfo = commitClient.doMkDir(new SVNURL[]{parsedTagBaseParentURL},
-                                evalMkdirComment, new SVNProperties(), true);
-            } catch (SVNException e) {
-                logger.println("Failed to create a directory '" +
-                        parsedTagBaseParentURL.toString() + "'.");
-                return false;
-            }
-            SVNErrorMessage mkdirErrMsg = mkdirInfo.getErrorMessage();
-
-            if (null != mkdirErrMsg) {
-                logger.println(mkdirErrMsg.getMessage());
-
-                return false;
+                logger.println(Messages.NoOldTag(evaledTagBaseURLStr));
             }
 
             SVNCopyClient copyClient = new SVNCopyClient(sam, null);
@@ -222,27 +177,23 @@ public class SvnTagPlugin {
             try {
                 String evalComment = evalGroovyExpression(
                         env, tagComment, locationPathElements);
+                SVNRevision rev = SVNRevision.create(Long.valueOf(revisions.get(ml.remote)));
 
                 SVNCommitInfo commitInfo =
-                        copyClient.doCopy(SVNURL.parseURIEncoded(ml.remote),
-                                SVNRevision.create(
-                                        Long.valueOf(revisions.get(ml.remote))),
+                        copyClient.doCopy(new SVNCopySource[] {
+                                    new SVNCopySource(rev, rev, SVNURL.parseURIEncoded(ml.remote)) },
                                 parsedTagBaseURL, false,
-                                false, evalComment);
+                                true, false, evalComment, new SVNProperties());
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
 
                 if (null != errorMsg) {
                     logger.println(errorMsg.getFullMessage());
-
                     return false;
                 } else {
-                    logger.println("Tagged as Revision " +
-                            commitInfo.getNewRevision());
+                    logger.println(Messages.Tagged(commitInfo.getNewRevision()));
                 }
             } catch (SVNException e) {
-                logger.println("Subversion copy failed. " +
-                        e.getLocalizedMessage());
-
+                logger.println(Messages.CopyFailed(e.getLocalizedMessage()));
                 return false;
             }
         }

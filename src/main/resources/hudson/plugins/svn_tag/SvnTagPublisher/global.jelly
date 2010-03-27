@@ -1,32 +1,16 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-  <!--
-    This Jelly script is used to produce the global configuration option.
-
-    Hudson uses a set of tag libraries to provide uniformity in forms.
-    To determine where this tag is defined, first check the namespace URI,
-    and then look under $HUDSON/views/. For example, <f:section> is defined
-    in $HUDSON/views/lib/form/section.jelly.
-
-    It's also often useful to just check other similar scripts to see what
-    tags they use. Views are always organized according to its owner class,
-    so it should be straightforward to find them.
-  -->
-  <f:section title="Subversion Tagging">
-     <f:entry title="Default Tag Base URL" help="/plugin/svn-tag/help-global-DefaultTagBaseURL.html">
-        <f:textbox name="svntag.defaultTagBaseURL" value="${descriptor.getDefaultTagBaseURL()}"
-          checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagBaseURLCheck?value='+escape(this.value)" />
-	</f:entry>
-      <f:entry title="Tag comment template" help="/plugin/svn-tag/help-global-TagComment.html">
-          <f:textbox name="svntag.tagComment" value="${descriptor.getTagComment()}"
-          checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagCommentCheck?value='+escape(this.value)" />
-      </f:entry>
-      <f:entry title="Tag mkdir comment template" help="/plugin/svn-tag/help-global-TagComment.html">
-          <f:textbox name="svntag.tagMkdirComment" value="${descriptor.getTagMkdirComment()}"
-                     checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagMkdirCommentCheck?value='+escape(this.value)" />
-      </f:entry>
-      <f:entry title="Tag delete comment template" help="/plugin/svn-tag/help-global-TagComment.html">
-          <f:textbox name="svntag.tagDeleteComment" value="${descriptor.getTagDeleteComment()}"
-                     checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagDeleteCommentCheck?value='+escape(this.value)" />
-      </f:entry>
+  <f:section title="${%Subversion Tagging}">
+    <f:entry title="${%Default Tag Base URL}" field="defaultTagBaseURL"
+             help="${descriptor.getHelpFile('tagBaseURL')}">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Tag comment template}" field="tagComment"
+             help="${descriptor.getHelpFile('global-TagComment')}">
+      <f:textbox/>
+    </f:entry>
+    <f:entry title="${%Tag delete comment template}" field="tagDeleteComment"
+             help="${descriptor.getHelpFile('tagComment')}">
+      <f:textbox/>
+    </f:entry>
   </f:section>
 </j:jelly>

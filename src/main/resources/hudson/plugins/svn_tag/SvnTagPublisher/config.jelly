@@ -1,37 +1,12 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
-
-  <f:entry title="Tag Base URL" help="/plugin/svn-tag/help-config-TagBaseURL.html">
-    <j:set var="tagBaseURL" value="${instance.getTagBaseURL()}"/>
-    <j:if test="${instance.getTagBaseURL() == null}">
-        <j:set var="tagBaseURL" value="${descriptor.getDefaultTagBaseURL()}"/>
-    </j:if>
-      <f:textbox name="svntag.tagBaseURL" value="${tagBaseURL}"
-                 checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagBaseURLCheck?value='+escape(this.value)" />
-    </f:entry>
-    <f:entry title="Tag Comment" help="/plugin/svn-tag/help-config-TagComment.html">
-        <j:set var="tagComment" value="${instance.getTagComment()}"/>
-        <j:if test="${instance.getTagComment() == null}">
-            <j:set var="tagComment" value="${descriptor.getTagComment()}"/>
-        </j:if>
-        <f:textbox name="svntag.tagComment" value="${tagComment}"
-                 checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagCommentCheck?value='+escape(this.value)" />
-    </f:entry>
-
-    <f:entry title="Tag Mkdir Comment" help="/plugin/svn-tag/help-config-TagComment.html">
-        <j:set var="tagMkdirComment" value="${instance.getTagMkdirComment()}"/>
-        <j:if test="${instance.getTagMkdirComment() == null}">
-            <j:set var="tagMkdirComment" value="${descriptor.getTagMkdirComment()}"/>
-        </j:if>
-        <f:textbox name="svntag.tagMkdirComment" value="${tagMkdirComment}"
-                   checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagMkdirCommentCheck?value='+escape(this.value)" />
-    </f:entry>
-
-    <f:entry title="Tag Delete Comment" help="/plugin/svn-tag/help-config-TagComment.html">
-        <j:set var="tagDeleteComment" value="${instance.getTagDeleteComment()}"/>
-        <j:if test="${instance.getTagDeleteComment() == null}">
-            <j:set var="tagDeleteComment" value="${descriptor.getTagDeleteComment()}"/>
-        </j:if>
-        <f:textbox name="svntag.tagDeleteComment" value="${tagDeleteComment}"
-                   checkUrl="'${rootURL}/publisher/SvnTagPublisher/tagDeleteCommentCheck?value='+escape(this.value)" />
-    </f:entry>
+  <f:entry title="${%Tag Base URL}" field="tagBaseURL">
+    <f:textbox default="${descriptor.defaultTagBaseURL}"/>
+  </f:entry>
+  <f:entry title="${%Tag Comment}" field="tagComment">
+    <f:textbox default="${descriptor.tagComment}"/>
+  </f:entry>
+  <f:entry title="${%Tag Delete Comment}" field="tagDeleteComment"
+           help="${descriptor.getHelpFile('tagComment')}">
+    <f:textbox default="${descriptor.tagDeleteComment}"/>
+  </f:entry>
 </j:jelly>
