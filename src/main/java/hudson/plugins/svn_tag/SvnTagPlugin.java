@@ -135,7 +135,7 @@ public class SvnTagPlugin {
 
             URI repoURI;
             try {
-                repoURI = new URI(ml.remote);
+                repoURI = new URI(StringUtils.replace(ml.remote, " ", "%20"));
             } catch (URISyntaxException e) {
                 logger.println("Failed to parse SVN repo URL. " +
                         e.getLocalizedMessage());
