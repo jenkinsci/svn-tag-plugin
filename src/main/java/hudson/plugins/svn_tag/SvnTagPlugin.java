@@ -2,6 +2,7 @@ package hudson.plugins.svn_tag;
 
 import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
+import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.scm.SubversionSCM;
@@ -54,6 +55,8 @@ public class SvnTagPlugin {
      * @param tagBaseURLStr tag base URL string
      * @param tagComment    tag comment
      * @return true if the operation was successful
+     * @throws InterruptedException 
+     * @throws IOException 
      */
     @SuppressWarnings({"FeatureEnvy", "UnusedDeclaration", "TypeMayBeWeakened",
             "LocalVariableOfConcreteClass"})
@@ -61,7 +64,7 @@ public class SvnTagPlugin {
                                   Launcher launcher,
                                   BuildListener buildListener,
                                   String tagBaseURLStr, String tagComment,
-                                  String tagDeleteComment) {
+                                  String tagDeleteComment) throws IOException, InterruptedException {
         PrintStream logger = buildListener.getLogger();
 
         if (!Result.SUCCESS.equals(abstractBuild.getResult())) {
@@ -72,21 +75,13 @@ public class SvnTagPlugin {
         AbstractProject<?, ?> rootProject =
                 abstractBuild.getProject().getRootProject();
 
-        Map<String, String> env;
-
         if (!(rootProject.getScm() instanceof SubversionSCM)) {
             logger.println(Messages.NotSubversion(rootProject.getScm().toString()));
             return true;
         }
 
         SubversionSCM scm = SubversionSCM.class.cast(rootProject.getScm());
-        try {
-            env = abstractBuild.getEnvironment(buildListener);
-        } catch (Exception e) {
-            logger.println(
-                    "Failed to get environment. " + e.getLocalizedMessage());
-            return false;
-        }
+        EnvVars envVars = abstractBuild.getEnvironment(buildListener);
 
         // Let SubversionSCM fill revision number.
         // It is guaranteed for getBuilds() return the latest build (i.e.
@@ -94,10 +89,8 @@ public class SvnTagPlugin {
         // The passed in abstractBuild may be the sub maven module and not
         // have revision.txt holding Svn revision information, so need to use
         // the build associated with the root level project.
-        scm.buildEnvVars(rootProject.getBuilds().get(0), env);
-
-        SubversionSCM.ModuleLocation[] moduleLocations = scm.getLocations();
-
+        scm.buildEnvVars(rootProject.getBuilds().get(0), envVars);
+        
         // environment variable "SVN_REVISION" doesn't contain revision number when multiple modules are
         // specified. Instead, parse revision.txt and obtain the corresponding revision numbers.
         Map<String, Long> revisions;
@@ -105,14 +98,14 @@ public class SvnTagPlugin {
             revisions = parseRevisionFile(abstractBuild);
         } catch (IOException e) {
             logger.println(
-                    "Failed to parse revision.txt. " + e.getLocalizedMessage());
+            		Messages.FailedParsingRevisionFile(e.getLocalizedMessage()));
             return false;
         }
 
         ISVNAuthenticationProvider sap =
-                scm.getDescriptor().createAuthenticationProvider();
+                scm.getDescriptor().createAuthenticationProvider(rootProject);
         if (sap == null) {
-            logger.println("Subversion authentication info is not set.");
+            logger.println(Messages.NoSVNAuthProvider());
             return false;
         }
 
@@ -122,41 +115,40 @@ public class SvnTagPlugin {
 
         SVNCommitClient commitClient = new SVNCommitClient(sam, null);
 
+        for (SubversionSCM.ModuleLocation ml : scm.getLocations(envVars, abstractBuild)) {
+			String mlUrl = null;
+        	URI repoURI = null;
+			try {
+				mlUrl = ml.getSVNURL().toString();
+				repoURI = new URI(mlUrl);
+			} catch (SVNException e) {
+        		logger.println(
+        				Messages.FailedParsingRepositoryURL(ml.remote, e.getLocalizedMessage()));
+        		return false;
+			} catch (URISyntaxException e) {
+        		logger.println(
+        				Messages.FailedParsingRepositoryURL(ml.remote, e.getLocalizedMessage()));
+        		return false;
+        	}
+        	logger.println(Messages.RemoteModuleLocation(mlUrl));
 
-        for (SubversionSCM.ModuleLocation ml : moduleLocations) {
-            logger.println("moduleLocation: Remote ->" + ml.remote);
-
-            List locationPathElements =
-                    Arrays.asList(StringUtils.split(ml.remote, "/"));
-
-            String evaledTagBaseURLStr =
-                    evalGroovyExpression(env, tagBaseURLStr,
-                            locationPathElements);
-
-            URI repoURI;
-            try {
-                repoURI = new URI(StringUtils.replace(ml.remote, " ", "%20"));
-            } catch (URISyntaxException e) {
-                logger.println("Failed to parse SVN repo URL. " +
-                        e.getLocalizedMessage());
-                return false;
-            }
+            List<String> locationPathElements = Arrays.asList(StringUtils.split(mlUrl, "/"));
+            String evaledTagBaseURLStr = evalGroovyExpression(
+            		envVars, tagBaseURLStr, locationPathElements);
 
             SVNURL parsedTagBaseURL = null;
             try {
-                parsedTagBaseURL = SVNURL.parseURIEncoded(
+                parsedTagBaseURL = SVNURL.parseURIDecoded(
                         repoURI.resolve(evaledTagBaseURLStr).toString());
-                logger.println(
-                        "Tag Base URL: '" + parsedTagBaseURL.toString() + "'.");
+                logger.println(Messages.TagBaseURL(parsedTagBaseURL.toString()));
             } catch (SVNException e) {
-                logger.println(
-                        "Failed to parse tag base URL '" + evaledTagBaseURLStr +
-                                "'. " + e.getLocalizedMessage());
+                logger.println(Messages.FailedParsingTagBaseURL(
+           				evaledTagBaseURLStr, e.getLocalizedMessage()));
             }
 
             try {
                 String evalDeleteComment = evalGroovyExpression(
-                        env, tagDeleteComment, locationPathElements);
+                		envVars, tagDeleteComment, locationPathElements);
                 SVNCommitInfo deleteInfo =
                         commitClient.doDelete(new SVNURL[]{parsedTagBaseURL},
                                 evalDeleteComment);
@@ -176,18 +168,25 @@ public class SvnTagPlugin {
 
             try {
                 String evalComment = evalGroovyExpression(
-                        env, tagComment, locationPathElements);
-                SVNRevision rev = SVNRevision.create(Long.valueOf(revisions.get(ml.remote)));
+                        envVars, tagComment, locationPathElements);
+
+                Long revision = revisions.get(mlUrl);
+                if (revision == null)
+                {
+                	logger.println(Messages.RevisionNotAvailable(mlUrl));
+                }
+                SVNRevision rev = SVNRevision.create(revision);
 
                 SVNCommitInfo commitInfo =
                         copyClient.doCopy(new SVNCopySource[] {
-                                    new SVNCopySource(rev, rev, SVNURL.parseURIEncoded(ml.remote)) },
+                                    new SVNCopySource(rev, rev, 
+                                    		SVNURL.parseURIEncoded(mlUrl)) },
                                 parsedTagBaseURL, false,
                                 true, false, evalComment, new SVNProperties());
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
 
                 if (null != errorMsg) {
-                    logger.println(errorMsg.getFullMessage());
+                    logger.println(Messages.FailedToTag(errorMsg.getFullMessage()));
                     return false;
                 } else {
                     logger.println(Messages.Tagged(commitInfo.getNewRevision()));
@@ -254,10 +253,12 @@ public class SvnTagPlugin {
                     continue;   // invalid line?
                 }
                 try {
-                    revisions.put(line.substring(0, index),
-                            Long.parseLong(line.substring(index + 1)));
+                	revisions.put(SVNURL.parseURIEncoded(line.substring(0, index)).toString(),
+                			Long.parseLong(line.substring(index + 1)));
                 } catch (NumberFormatException e) {
                     // perhaps a corrupted line. ignore
+                } catch(SVNException e) {
+                	// perhaps a corrupted line. ignore
                 }
             }
         } finally {

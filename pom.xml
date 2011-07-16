@@ -1,9 +1,9 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.jvnet.hudson.plugins</groupId>
+    <groupId>org.jenkins-ci.plugins</groupId>
     <artifactId>plugin</artifactId>
-    <version>1.324</version>
+    <version>1.420</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <artifactId>svn-tag</artifactId>
@@ -25,11 +25,6 @@
   </developers>
   <dependencies>
     <dependency>
-      <groupId>${project.groupId}</groupId>
-      <artifactId>subversion</artifactId>
-      <version>[1.1,)</version>
-    </dependency>
-    <dependency>
       <groupId>dom4j</groupId>
       <artifactId>dom4j</artifactId>
       <version>1.6.1</version>
@@ -40,6 +35,13 @@
       <version>5.1</version>
       <classifier>jdk15</classifier>
       <scope>test</scope>
+    </dependency>
+    <dependency>
+    	<groupId>org.jenkins-ci.plugins</groupId>
+    	<artifactId>subversion</artifactId>
+    	<version>[1.28,)</version>
+    	<type>jar</type>
+    	<scope>compile</scope>
     </dependency>
   </dependencies>
 </project>
