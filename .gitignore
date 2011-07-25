@@ -1,1 +1,5 @@
 target
+*.ipr
+*.iws
+*.iml
+release.properties
