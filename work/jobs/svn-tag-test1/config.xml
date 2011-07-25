@@ -1,0 +1,40 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties/>
+  <scm class="hudson.scm.SubversionSCM">
+    <locations>
+      <hudson.scm.SubversionSCM_-ModuleLocation>
+        <remote>https://clazzsoft.svn.beanstalkapp.com/svnrepo/trunk</remote>
+        <local>.</local>
+      </hudson.scm.SubversionSCM_-ModuleLocation>
+    </locations>
+    <excludedRegions></excludedRegions>
+    <includedRegions></includedRegions>
+    <excludedUsers></excludedUsers>
+    <excludedRevprop></excludedRevprop>
+    <excludedCommitMessages></excludedCommitMessages>
+    <workspaceUpdater class="hudson.scm.subversion.UpdateUpdater"/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers class="vector"/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>/bin/date</command>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers>
+    <hudson.plugins.svn__tag.SvnTagPublisher>
+      <tagBaseURL>https://clazzsoft.svn.beanstalkapp.com/svnrepo/tags/last-successful/${env[&apos;JOB_NAME&apos;]}</tagBaseURL>
+      <tagComment>Tagged by Hudson svn-tag plugin. Build:${env[&apos;BUILD_TAG&apos;]}.</tagComment>
+      <tagDeleteComment>Delete old tag by SvnTag Hudson plugin.</tagDeleteComment>
+    </hudson.plugins.svn__tag.SvnTagPublisher>
+  </publishers>
+  <buildWrappers/>
+</project>

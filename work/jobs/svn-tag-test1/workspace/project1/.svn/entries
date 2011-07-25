@@ -1,0 +1,46 @@
+8
+
+dir
+134
+https://clazzsoft.svn.beanstalkapp.com/svnrepo/trunk/project1
+https://clazzsoft.svn.beanstalkapp.com/svnrepo
+
+
+
+2008-08-12T18:35:09.326507Z
+10
+kenji_nakamura
+
+
+svn:special svn:externals svn:needs-lock
+
+
+
+
+
+
+
+
+
+
+
+e4a02bf6-b75c-4f4a-b16e-cf06f88e8834
+
+a.txt
+file
+
+
+
+
+2011-07-22T21:50:30.000000Z
+5c9597f3c8245907ea71a89d9d39d08e
+2008-05-11T19:43:39.753474Z
+3
+kenji_nakamura
+
+subproject1
+dir
+
+subproject2
+dir
+

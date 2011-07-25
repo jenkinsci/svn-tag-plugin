@@ -1,0 +1,43 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<build>
+  <actions>
+    <hudson.model.CauseAction>
+      <causes>
+        <hudson.model.Cause_-UserCause>
+          <authenticationName>anonymous</authenticationName>
+        </hudson.model.Cause_-UserCause>
+      </causes>
+    </hudson.model.CauseAction>
+    <hudson.scm.SubversionTagAction>
+      <build class="build" reference="../../.."/>
+      <tags class="hudson.util.CopyOnWriteMap$Tree">
+        <no-comparator/>
+        <entry>
+          <hudson.scm.SubversionSCM_-SvnInfo>
+            <url>https://clazzsoft.svn.beanstalkapp.com/svnrepo/trunk</url>
+            <revision>48</revision>
+          </hudson.scm.SubversionSCM_-SvnInfo>
+          <list/>
+        </entry>
+      </tags>
+    </hudson.scm.SubversionTagAction>
+    <hudson.scm.SVNRevisionState>
+      <revisions>
+        <entry>
+          <string>https://clazzsoft.svn.beanstalkapp.com/svnrepo/trunk</string>
+          <long>48</long>
+        </entry>
+      </revisions>
+    </hudson.scm.SVNRevisionState>
+  </actions>
+  <number>2</number>
+  <result>SUCCESS</result>
+  <duration>5889</duration>
+  <charset>MacRoman</charset>
+  <keepLog>false</keepLog>
+  <builtOn></builtOn>
+  <workspace>/Users/kenjin/workspace/jenkins/svn-tag-plugin/work/jobs/svn-tag-test1/workspace</workspace>
+  <hudsonVersion>1.420</hudsonVersion>
+  <scm class="hudson.scm.SubversionChangeLogParser"/>
+  <culprits/>
+</build>

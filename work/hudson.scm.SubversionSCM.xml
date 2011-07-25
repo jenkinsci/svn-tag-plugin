@@ -1,0 +1,16 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<hudson.scm.SubversionSCM_-DescriptorImpl>
+  <generation>1</generation>
+  <credentials class="hashtable">
+    <entry>
+      <string>&lt;https://clazzsoft.svn.beanstalkapp.com:443&gt; SVN</string>
+      <hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential>
+        <userName>kenjin</userName>
+        <password>aG9nZWhvZ2U=</password>
+      </hudson.scm.SubversionSCM_-DescriptorImpl_-PasswordCredential>
+    </entry>
+  </credentials>
+  <workspaceFormat>8</workspaceFormat>
+  <validateRemoteUpToVar>false</validateRemoteUpToVar>
+  <storeAuthToDisk>true</storeAuthToDisk>
+</hudson.scm.SubversionSCM_-DescriptorImpl>

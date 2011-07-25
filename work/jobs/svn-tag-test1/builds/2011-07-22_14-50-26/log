@@ -1,0 +1,25 @@
+Started by user anonymous
+Checking out a fresh workspace because there's no workspace at /Users/kenjin/workspace/jenkins/svn-tag-plugin/work/jobs/svn-tag-test1/workspace
+Cleaning workspace /Users/kenjin/workspace/jenkins/svn-tag-plugin/work/jobs/svn-tag-test1/workspace
+Checking out https://clazzsoft.svn.beanstalkapp.com/svnrepo/trunk
+A         White Space Directory
+A         project1
+A         project1/subproject1
+A         project1/subproject1/subproject1.txt
+A         project1/subproject2
+A         project1/subproject2/subproject2.txt
+A         project1/a.txt
+A         project2
+A         project2/subproject21
+A         project2/subproject21/subproject21.txt
+A         project2/subproject22
+A         project2/subproject22/subproject22.txt
+At revision 133
+[workspace] $ /bin/sh -xe /var/folders/w6/rnqspstd03q87ygwg4z541pr0000gn/T/hudson582665624887931033.sh
++ /bin/date
+Fri Jul 22 14:50:31 PDT 2011
+Remote Module Location: https://clazzsoft.svn.beanstalkapp.com/svnrepo/trunk.
+Tag Base URL: https://clazzsoft.svn.beanstalkapp.com/svnrepo/tags/last-successful/svn-tag-test1.
+There was no old tag at https://clazzsoft.svn.beanstalkapp.com/svnrepo/tags/last-successful/svn-tag-test1.
+Tagged as Revision 134
+Finished: SUCCESS
