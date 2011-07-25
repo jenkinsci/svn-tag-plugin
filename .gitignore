@@ -3,3 +3,4 @@ target
 *.iws
 *.iml
 release.properties
+pom.xml.releaseBackup
