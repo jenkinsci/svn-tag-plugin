@@ -9,7 +9,7 @@
     <name>Hudson Subversion Tagging Plugin</name>
     <url>http://wiki.hudson-ci.org/display/HUDSON/Subversion+Tagging+Plugin</url>
     <packaging>hpi</packaging>
-    <version>1.15</version>
+    <version>1.16-SNAPSHOT</version>
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/svn-tag-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/svn-tag-plugin.git</developerConnection>
