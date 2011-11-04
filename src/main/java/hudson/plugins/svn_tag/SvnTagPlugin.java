@@ -174,9 +174,9 @@ public class SvnTagPlugin {
                         envVars, tagComment, locationPathElements);
 
                 Long revision = revisions.get(mlUrl);
-                if (revision == null)
-                {
+                if (revision == null) {
                 	logger.println(Messages.RevisionNotAvailable(mlUrl));
+                    continue;
                 }
                 SVNRevision rev = SVNRevision.create(revision);
 
