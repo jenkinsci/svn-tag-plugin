@@ -67,7 +67,7 @@ public class SvnTagPlugin {
                                   String tagDeleteComment) throws IOException, InterruptedException {
         PrintStream logger = buildListener.getLogger();
 
-        if (!Result.SUCCESS.equals(abstractBuild.getResult())) {
+        if (Result.SUCCESS!=abstractBuild.getResult()) {
             logger.println(Messages.UnsuccessfulBuild());
             return true;
         }
