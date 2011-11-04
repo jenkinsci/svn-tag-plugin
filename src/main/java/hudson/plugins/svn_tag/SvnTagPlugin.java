@@ -133,7 +133,14 @@ public class SvnTagPlugin {
         				Messages.FailedParsingRepositoryURL(ml.remote, e.getLocalizedMessage()));
         		return false;
         	}
-        	logger.println(Messages.RemoteModuleLocation(mlUrl));
+            Long revision = revisions.get(mlUrl);
+            if (revision == null) {
+                // this can happen for example if the project configuration changes since this build.
+                logger.println(Messages.RevisionNotAvailable(mlUrl));
+                continue;
+            }
+
+        	logger.println(Messages.RemoteModuleLocation(mlUrl+'@'+revision));
 
             List<String> locationPathElements = Arrays.asList(StringUtils.split(mlUrl, "/"));
             String evaledTagBaseURLStr = evalGroovyExpression(
@@ -173,11 +180,6 @@ public class SvnTagPlugin {
                 String evalComment = evalGroovyExpression(
                         envVars, tagComment, locationPathElements);
 
-                Long revision = revisions.get(mlUrl);
-                if (revision == null) {
-                	logger.println(Messages.RevisionNotAvailable(mlUrl));
-                    continue;
-                }
                 SVNRevision rev = SVNRevision.create(revision);
 
                 SVNCommitInfo commitInfo =
