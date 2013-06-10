@@ -6,6 +6,7 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.*;
 import hudson.scm.SubversionSCM;
+import hudson.FilePath;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.tmatesoft.svn.core.SVNCommitInfo;
@@ -182,9 +183,10 @@ public class SvnTagPlugin {
                 String evalComment = evalGroovyExpression(
                         envVars, tagComment, locationPathElements);
 
-                SVNCopySource copySources[];
+				SVNCommitInfo commitInfo;
 
                 if (tagPegExternals) {
+
                     copyClient.setExternalsHandler(new ISVNExternalsHandler() {
                            public SVNRevision[] handleExternal(File externalPath,
                                                                SVNURL externalURL,
@@ -193,20 +195,18 @@ public class SvnTagPlugin {
                                                                String externalsDefinition,
                                                                SVNRevision externalsWorkingRevision) {
                                return new SVNRevision[] { externalsWorkingRevision, externalsWorkingRevision };
-                               }});
-                    copySources = new SVNCopySource[] {
-                                         new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING,
-                                             new File(rootBuild.getWorkspace().toString(),ml.getLocalDir().toString())) };
-                } else {
-                    SVNRevision rev = SVNRevision.create(revision);
-                    copySources = new SVNCopySource[] { new SVNCopySource(rev, rev, SVNURL.parseURIEncoded(mlUrl)) };
-                }
+                              }});
 
-                SVNCommitInfo commitInfo =
-                        copyClient.doCopy(
-                                 copySources,
-                                parsedTagBaseURL, false,
-                                true, false, evalComment, new SVNProperties());
+				commitInfo = rootBuild.getWorkspace().act(new TagAndPegExternalsTask(logger, copyClient, ml.getLocalDir().toString(), parsedTagBaseURL, evalComment));
+				} else {
+                    SVNRevision rev = SVNRevision.create(revision);
+                    SVNCopySource copySources[] = new SVNCopySource[] { new SVNCopySource(rev, rev, SVNURL.parseURIEncoded(mlUrl)) };
+
+					commitInfo = copyClient.doCopy(
+										  copySources,
+										  parsedTagBaseURL, false,
+										  true, false, evalComment, new SVNProperties());
+                }
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
 
                 if (null != errorMsg) {
@@ -224,6 +224,41 @@ public class SvnTagPlugin {
         return true;
     }
 
+   /**
+     * Checks .svn files in the workspace and finds out revisions of the modules
+     * that the workspace has.
+     *
+     * @return
+     *      null if the parsing somehow fails. Otherwise a map from the repository URL to revisions.
+     */
+    private static class TagAndPegExternalsTask implements FilePath.FileCallable<SVNCommitInfo> {
+        private final PrintStream logger;
+        private final SVNCopyClient copyClient;
+        private final String LocalDir;
+        private final SVNURL parsedTagBaseURL;
+        private final String evalComment;
+
+        public TagAndPegExternalsTask(PrintStream logger, SVNCopyClient copyClient, String LocalDir, SVNURL parsedTagBaseURL, String evalComment) {
+            this.logger             = logger;
+            this.copyClient         = copyClient;
+            this.LocalDir           = LocalDir;
+            this.parsedTagBaseURL   = parsedTagBaseURL;
+            this.evalComment        = evalComment;
+        }
+        public SVNCommitInfo invoke(File ws, hudson.remoting.VirtualChannel channel) throws IOException {
+            try {
+                return copyClient.doCopy(new SVNCopySource[] {
+            new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING,
+                              new File(ws,LocalDir)) },
+            parsedTagBaseURL, false,
+            true, false, evalComment, new SVNProperties());
+            } catch (SVNException e) {
+                logger.println(Messages.CopyFailed(e.getLocalizedMessage()));
+                return null;
+            }
+            }
+    }
+    
     @SuppressWarnings({"StaticMethodOnlyUsedInOneClass", "TypeMayBeWeakened"})
     static String evalGroovyExpression(Map<String, String> env, String evalText,
                                        List locationPathElements) {
