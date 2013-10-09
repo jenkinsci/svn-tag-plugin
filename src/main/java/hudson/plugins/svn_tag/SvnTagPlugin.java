@@ -22,6 +22,7 @@ import org.tmatesoft.svn.core.wc.SVNCopySource;
 import org.tmatesoft.svn.core.wc.SVNRevision;
 import org.tmatesoft.svn.core.wc.SVNWCUtil;
 import org.tmatesoft.svn.core.wc.ISVNExternalsHandler;
+import org.tmatesoft.svn.core.wc.SVNClientManager;
 
 import java.io.*;
 import java.net.URI;
@@ -183,37 +184,27 @@ public class SvnTagPlugin {
                 String evalComment = evalGroovyExpression(
                         envVars, tagComment, locationPathElements);
 
-				SVNCommitInfo commitInfo;
-
                 if (tagPegExternals) {
-
-                    copyClient.setExternalsHandler(new ISVNExternalsHandler() {
-                           public SVNRevision[] handleExternal(File externalPath,
-                                                               SVNURL externalURL,
-                                                               SVNRevision externalRevision,
-                                                               SVNRevision externalPegRevision,
-                                                               String externalsDefinition,
-                                                               SVNRevision externalsWorkingRevision) {
-                               return new SVNRevision[] { externalsWorkingRevision, externalsWorkingRevision };
-                              }});
-
-				commitInfo = rootBuild.getWorkspace().act(new TagAndPegExternalsTask(logger, copyClient, ml.getLocalDir().toString(), parsedTagBaseURL, evalComment));
+					if( !rootBuild.getWorkspace().act(new TagAndPegExternalsTask(abstractBuild, scm, buildListener, ml.getLocalDir().toString(), parsedTagBaseURL, evalComment)) )
+					{
+						return false;
+					}
 				} else {
                     SVNRevision rev = SVNRevision.create(revision);
                     SVNCopySource copySources[] = new SVNCopySource[] { new SVNCopySource(rev, rev, SVNURL.parseURIEncoded(mlUrl)) };
 
-					commitInfo = copyClient.doCopy(
+					SVNCommitInfo commitInfo = copyClient.doCopy(
 										  copySources,
 										  parsedTagBaseURL, false,
 										  true, false, evalComment, new SVNProperties());
-                }
-                SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
+					SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
 
-                if (null != errorMsg) {
-                    logger.println(Messages.FailedToTag(errorMsg.getFullMessage()));
-                    return false;
-                } else {
-                    logger.println(Messages.Tagged(commitInfo.getNewRevision()));
+					if (null != errorMsg) {
+						logger.println(Messages.FailedToTag(errorMsg.getFullMessage()));
+						return false;
+					} else {
+						logger.println(Messages.Tagged(commitInfo.getNewRevision()));
+					}
                 }
             } catch (SVNException e) {
                 logger.println(Messages.CopyFailed(e.getLocalizedMessage()));
@@ -231,32 +222,56 @@ public class SvnTagPlugin {
      * @return
      *      null if the parsing somehow fails. Otherwise a map from the repository URL to revisions.
      */
-    private static class TagAndPegExternalsTask implements FilePath.FileCallable<SVNCommitInfo> {
-        private final PrintStream logger;
-        private final SVNCopyClient copyClient;
+    private static class TagAndPegExternalsTask implements FilePath.FileCallable<Boolean> {
+        private final ISVNAuthenticationProvider authProvider;
         private final String LocalDir;
         private final SVNURL parsedTagBaseURL;
         private final String evalComment;
+		private final BuildListener buildListener;
 
-        public TagAndPegExternalsTask(PrintStream logger, SVNCopyClient copyClient, String LocalDir, SVNURL parsedTagBaseURL, String evalComment) {
-            this.logger             = logger;
-            this.copyClient         = copyClient;
+        public TagAndPegExternalsTask(AbstractBuild<?, ?> build, SubversionSCM parent, BuildListener buildListener,String LocalDir, SVNURL parsedTagBaseURL, String evalComment) {
+            this.authProvider       = parent.getDescriptor().createAuthenticationProvider(build.getParent());
+			this.buildListener		= buildListener;
             this.LocalDir           = LocalDir;
             this.parsedTagBaseURL   = parsedTagBaseURL;
             this.evalComment        = evalComment;
         }
-        public SVNCommitInfo invoke(File ws, hudson.remoting.VirtualChannel channel) throws IOException {
+        public Boolean invoke(File ws, hudson.remoting.VirtualChannel channel) throws IOException {
+			final PrintStream logger	= buildListener.getLogger();
+            final SVNClientManager manager = SubversionSCM.createSvnClientManager(authProvider);
             try {
-                return copyClient.doCopy(new SVNCopySource[] {
-            new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING,
-                              new File(ws,LocalDir)) },
-            parsedTagBaseURL, false,
-            true, false, evalComment, new SVNProperties());
-            } catch (SVNException e) {
-                logger.println(Messages.CopyFailed(e.getLocalizedMessage()));
-                return null;
+                final SVNCopyClient copyClient = manager.getCopyClient();
+				copyClient.setExternalsHandler(new ISVNExternalsHandler() {
+						public SVNRevision[] handleExternal(File externalPath,
+															SVNURL externalURL,
+															SVNRevision externalRevision,
+															SVNRevision externalPegRevision,
+															String externalsDefinition,
+															SVNRevision externalsWorkingRevision) {
+							return new SVNRevision[] { externalsWorkingRevision, externalsWorkingRevision };
+						}});
+
+                final SVNCommitInfo commitInfo = copyClient.doCopy(new SVNCopySource[] {
+						new SVNCopySource(SVNRevision.WORKING, SVNRevision.WORKING,
+										  new File(ws,LocalDir)) },
+					parsedTagBaseURL, false,
+					true, false, evalComment, new SVNProperties());
+
+				SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
+
+				if (null != errorMsg) {
+					logger.println(Messages.FailedToTag(errorMsg.getFullMessage()));
+					return false;
+				} else {
+					logger.println(Messages.Tagged(commitInfo.getNewRevision()));
+				}
+			} catch (SVNException e) {
+				e.printStackTrace();
+            } finally {
+                manager.dispose();
             }
-            }
+			return true;
+		}
     }
     
     @SuppressWarnings({"StaticMethodOnlyUsedInOneClass", "TypeMayBeWeakened"})
