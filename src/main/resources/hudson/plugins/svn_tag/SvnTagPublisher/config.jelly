@@ -9,4 +9,7 @@
            help="${descriptor.getHelpFile('tagComment')}">
     <f:textbox default="${descriptor.tagDeleteComment}"/>
   </f:entry>
+  <f:entry help="${descriptor.getHelpFile('pegExternals')}">
+    <f:checkbox title="${%Peg externals revisions}" field="tagPegExternals" checked="${instance.tagPegExternals}"/>
+  </f:entry>
 </j:jelly>

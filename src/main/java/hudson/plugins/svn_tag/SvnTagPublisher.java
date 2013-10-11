@@ -43,11 +43,14 @@ public class SvnTagPublisher extends Notifier {
 
     private String tagDeleteComment = null;
 
+     private boolean tagPegExternals = false;
+
     @DataBoundConstructor
-    public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment) {
+    public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment, boolean tagPegExternals) {
         this.tagBaseURL = tagBaseURL;
         this.tagComment = tagComment;
         this.tagDeleteComment = tagDeleteComment;
+		this.tagPegExternals = tagPegExternals;
     }
 
     /**
@@ -67,6 +70,10 @@ public class SvnTagPublisher extends Notifier {
         return this.tagDeleteComment;
     }
 
+    public boolean	getTagPegExternals() {
+        return this.tagPegExternals;
+    }
+
     public BuildStepMonitor getRequiredMonitorService() {
         return BuildStepMonitor.BUILD;
     }
@@ -78,7 +85,7 @@ public class SvnTagPublisher extends Notifier {
             throws InterruptedException, IOException {
         return SvnTagPlugin.perform(abstractBuild, launcher, buildListener,
                 this.getTagBaseURL(), this.getTagComment(),
-                this.getTagDeleteComment());
+                this.getTagDeleteComment(), this.getTagPegExternals() );
     }
 
     @Override
@@ -108,6 +115,8 @@ public class SvnTagPublisher extends Notifier {
         private transient String tagMkdirComment;
 
         private String tagDeleteComment;
+
+		private boolean tagPegExternals = false;
 
         /**
          * Creates a new SvnTagDescriptorImpl object.
@@ -197,6 +206,14 @@ public class SvnTagPublisher extends Notifier {
 
         public void setTagDeleteComment(String tagDeleteComment) {
             this.tagDeleteComment = tagDeleteComment;
+        }
+
+        public boolean getTagPegExternals() {
+            return tagPegExternals;
+        }
+
+        public void setTagPegExternals(boolean tagPegExternals) {
+            this.tagPegExternals = tagPegExternals;
         }
 
         public FormValidation doCheckTagComment(@QueryParameter final String value) {
