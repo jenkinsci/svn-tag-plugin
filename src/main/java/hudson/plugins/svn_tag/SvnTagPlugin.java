@@ -4,22 +4,17 @@ import groovy.lang.Binding;
 import groovy.lang.GroovyShell;
 import hudson.EnvVars;
 import hudson.Launcher;
-import hudson.model.*;
+import hudson.model.AbstractBuild;
+import hudson.model.AbstractProject;
+import hudson.model.BuildListener;
+import hudson.model.Result;
 import hudson.scm.SubversionSCM;
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
-import org.tmatesoft.svn.core.SVNCommitInfo;
-import org.tmatesoft.svn.core.SVNErrorMessage;
-import org.tmatesoft.svn.core.SVNException;
-import org.tmatesoft.svn.core.SVNProperties;
-import org.tmatesoft.svn.core.SVNURL;
+import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
-import org.tmatesoft.svn.core.wc.SVNCommitClient;
-import org.tmatesoft.svn.core.wc.SVNCopyClient;
-import org.tmatesoft.svn.core.wc.SVNCopySource;
-import org.tmatesoft.svn.core.wc.SVNRevision;
-import org.tmatesoft.svn.core.wc.SVNWCUtil;
+import org.tmatesoft.svn.core.wc.*;
 
 import java.io.*;
 import java.net.URI;
@@ -105,8 +100,8 @@ public class SvnTagPlugin {
             return false;
         }
 
-        ISVNAuthenticationProvider sap =
-                scm.getDescriptor().createAuthenticationProvider(rootProject);
+        ISVNAuthenticationProvider sap = scm.createAuthenticationProvider(rootProject, null);
+
         if (sap == null) {
             logger.println(Messages.NoSVNAuthProvider());
             return false;
