@@ -100,7 +100,7 @@ public class SvnTagPlugin {
             return false;
         }
 
-        ISVNAuthenticationProvider sap = scm.createAuthenticationProvider(rootProject, null);
+        ISVNAuthenticationProvider sap = scm.createAuthenticationProvider(rootProject, scm.getLocations()[0]);
 
         if (sap == null) {
             logger.println(Messages.NoSVNAuthProvider());
