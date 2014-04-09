@@ -1,4 +1,10 @@
 <j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+
+  <f:entry title="${%Activation on build success}" field="activateOnBuildSuccess"
+		help="${descriptor.getHelpFile('tagActivateOnBuildSuccess')}">
+    <f:checkbox default="true" name="activateOnBuildSuccess"/>
+  </f:entry>
+  
   <f:entry title="${%Tag Base URL}" field="tagBaseURL">
     <f:textbox default="${descriptor.defaultTagBaseURL}"/>
   </f:entry>

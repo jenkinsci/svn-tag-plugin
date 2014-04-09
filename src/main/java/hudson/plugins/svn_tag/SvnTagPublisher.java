@@ -37,6 +37,8 @@ public class SvnTagPublisher extends Notifier {
     private String tagBaseURL = null;
 
     private String tagComment = null;
+    
+    private boolean activateOnBuildSuccess = true;
 
     @Deprecated
     private transient String tagMkdirComment;
@@ -44,10 +46,11 @@ public class SvnTagPublisher extends Notifier {
     private String tagDeleteComment = null;
 
     @DataBoundConstructor
-    public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment) {
+    public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment, boolean activateOnBuildSuccess) {
         this.tagBaseURL = tagBaseURL;
         this.tagComment = tagComment;
         this.tagDeleteComment = tagDeleteComment;
+        this.activateOnBuildSuccess = activateOnBuildSuccess;
     }
 
     /**
@@ -66,6 +69,10 @@ public class SvnTagPublisher extends Notifier {
     public String getTagDeleteComment() {
         return this.tagDeleteComment;
     }
+    
+    public boolean getActivateOnBuildSuccess() {
+        return this.activateOnBuildSuccess;
+    }    
 
     public BuildStepMonitor getRequiredMonitorService() {
         return BuildStepMonitor.BUILD;
@@ -78,7 +85,7 @@ public class SvnTagPublisher extends Notifier {
             throws InterruptedException, IOException {
         return SvnTagPlugin.perform(abstractBuild, launcher, buildListener,
                 this.getTagBaseURL(), this.getTagComment(),
-                this.getTagDeleteComment());
+                this.getTagDeleteComment(), this.getActivateOnBuildSuccess());
     }
 
     @Override
@@ -108,6 +115,7 @@ public class SvnTagPublisher extends Notifier {
         private transient String tagMkdirComment;
 
         private String tagDeleteComment;
+        
 
         /**
          * Creates a new SvnTagDescriptorImpl object.
@@ -198,7 +206,7 @@ public class SvnTagPublisher extends Notifier {
         public void setTagDeleteComment(String tagDeleteComment) {
             this.tagDeleteComment = tagDeleteComment;
         }
-
+        
         public FormValidation doCheckTagComment(@QueryParameter final String value) {
             try {
                 SvnTagPlugin.evalGroovyExpression(
