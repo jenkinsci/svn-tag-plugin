@@ -191,7 +191,7 @@ public class SvnTagPlugin {
                     logger.println(Messages.Tagged(commitInfo.getNewRevision()));
                 }
             } catch (SVNException e) {
-                logger.println(Messages.CopyFailed(e.getLocalizedMessage()));
+                e.printStackTrace(buildListener.error(Messages.Copy_Failed()));
                 return false;
             }
         }
