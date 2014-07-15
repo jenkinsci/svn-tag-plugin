@@ -1,7 +1,8 @@
-target
+target/
+work/
+.idea/
 *.ipr
 *.iws
 *.iml
 release.properties
 pom.xml.releaseBackup
-work
