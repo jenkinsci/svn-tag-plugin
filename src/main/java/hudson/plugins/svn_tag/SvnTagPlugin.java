@@ -61,6 +61,7 @@ public class SvnTagPlugin {
                                   String tagBaseURLStr, String tagComment,
                                   String tagDeleteComment) throws IOException, InterruptedException {
         PrintStream logger = buildListener.getLogger();
+        logger.println("Starting to tag");
 
         if (Result.SUCCESS!=abstractBuild.getResult()) {
             logger.println(Messages.UnsuccessfulBuild());
@@ -105,6 +106,7 @@ public class SvnTagPlugin {
         	URI repoURI;
 			try {
 				mlUrl = ml.getSVNURL().toString();
+                logger.println("Tagging " + mlUrl);
 				repoURI = new URI(mlUrl);
 			} catch (SVNException e) {
         		logger.println(
