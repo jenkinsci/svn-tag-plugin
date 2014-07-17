@@ -9,12 +9,13 @@
     <name>Jenkins Subversion Tagging Plugin</name>
     <url>http://wiki.jenkins-ci.org/display/JENKINS/Subversion+Tagging+Plugin</url>
     <packaging>hpi</packaging>
-    <version>1.17-SNAPSHOT</version>
+    <version>1.17</version>
     <scm>
         <connection>scm:git:git://github.com/jenkinsci/svn-tag-plugin.git</connection>
         <developerConnection>scm:git:git@github.com:jenkinsci/svn-tag-plugin.git</developerConnection>
         <url>http://github.com/jenkinsci/svn-tag-plugin</url>
-    </scm>
+      <tag>svn-tag-1.17</tag>
+  </scm>
     <developers>
         <developer>
             <id>k2nakamura</id>
