@@ -81,8 +81,8 @@ public class SvnTagPlugin {
         SCM projectSCM = rootProject.getScm();
         
         if (Hudson.getInstance().getPlugin("multiple-scms") != null) {
-        	logger.println("Identified Multiple SCM configuration - locating SubversionSCM instance");
 			if (projectSCM instanceof MultiSCM) {
+	        	logger.println("Identified Multiple SCM configuration - locating SubversionSCM instance");				
 				// fetch subversion SCM from MultiSCM list of SCMs
 				List<SCM> multiSCMList = MultiSCM.class.cast(projectSCM).getConfiguredSCMs();
 				for (SCM scm : multiSCMList) {
