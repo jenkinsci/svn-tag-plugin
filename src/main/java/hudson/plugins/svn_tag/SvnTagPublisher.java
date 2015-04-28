@@ -1,6 +1,7 @@
 package hudson.plugins.svn_tag;
 
 import hudson.tasks.BuildStepMonitor;
+
 import java.io.IOException;
 import java.util.HashMap;
 
@@ -15,6 +16,7 @@ import hudson.tasks.Notifier;
 import hudson.tasks.Publisher;
 import hudson.util.FormValidation;
 import net.sf.json.JSONObject;
+
 import org.codehaus.groovy.control.CompilationFailedException;
 import org.kohsuke.stapler.DataBoundConstructor;
 import org.kohsuke.stapler.QueryParameter;
@@ -43,11 +45,14 @@ public class SvnTagPublisher extends Notifier {
 
     private String tagDeleteComment = null;
 
+	private Integer waitBeforeTagging = 0;
+
     @DataBoundConstructor
-    public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment) {
+    public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment, Integer waitBeforeTagging) {
         this.tagBaseURL = tagBaseURL;
         this.tagComment = tagComment;
         this.tagDeleteComment = tagDeleteComment;
+        this.waitBeforeTagging = waitBeforeTagging;
     }
 
     /**
@@ -67,6 +72,10 @@ public class SvnTagPublisher extends Notifier {
         return this.tagDeleteComment;
     }
 
+    public Integer getWaitBeforeTagging() {
+        return this.waitBeforeTagging;
+    }
+
     public BuildStepMonitor getRequiredMonitorService() {
         return BuildStepMonitor.BUILD;
     }
@@ -78,7 +87,7 @@ public class SvnTagPublisher extends Notifier {
             throws InterruptedException, IOException {
         return SvnTagPlugin.perform(abstractBuild, launcher, buildListener,
                 this.getTagBaseURL(), this.getTagComment(),
-                this.getTagDeleteComment());
+                this.getTagDeleteComment(), this.getWaitBeforeTagging());
     }
 
     @Override
@@ -109,6 +118,8 @@ public class SvnTagPublisher extends Notifier {
 
         private String tagDeleteComment;
 
+		private Integer waitBeforeTagging;
+
         /**
          * Creates a new SvnTagDescriptorImpl object.
          */
@@ -116,6 +127,7 @@ public class SvnTagPublisher extends Notifier {
             this.defaultTagBaseURL = Messages.DefaultTagBaseURL();
             this.tagComment = Messages.DefaultTagComment();
             this.tagDeleteComment = Messages.DefaultTagDeleteComment();
+            this.waitBeforeTagging = 0;
             load();
         }
 
@@ -217,6 +229,23 @@ public class SvnTagPublisher extends Notifier {
         public boolean isApplicable(Class<? extends AbstractProject> jobType) {
             // need to check if this is a subversion project??
             return true;
+        }
+
+        public Integer getWaitBeforeTagging() {
+            return waitBeforeTagging;
+        }
+
+        public void setWaitBeforeTagging(Integer waitBeforeTagging) {
+            this.waitBeforeTagging = waitBeforeTagging;
+        }
+
+        public FormValidation doCheckWaitBeforeTagging(@QueryParameter final String waitBeforeTagging) {
+            try {
+                Integer.parseInt(waitBeforeTagging);
+                return FormValidation.ok();
+            } catch (NumberFormatException e) {
+                return FormValidation.error(Messages.BadWaitBeforeTagging(e.getMessage()));
+            }
         }
 
     }

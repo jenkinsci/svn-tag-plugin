@@ -12,5 +12,9 @@
              help="${descriptor.getHelpFile('tagComment')}">
       <f:textbox/>
     </f:entry>
+    <f:entry title="${%Wait before tagging}" field="waitBeforeTagging"
+             help="${descriptor.getHelpFile('waitBeforeTagging')}">
+      <f:textbox/>
+    </f:entry>
   </f:section>
 </j:jelly>
