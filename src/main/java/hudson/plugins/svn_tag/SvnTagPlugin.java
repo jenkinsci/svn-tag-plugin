@@ -147,8 +147,7 @@ public class SvnTagPlugin {
                 return false;
             }
 
-            ISVNAuthenticationManager sam =
-                    SVNWCUtil.createDefaultAuthenticationManager();
+            ISVNAuthenticationManager sam = SubversionSCM.createSvnAuthenticationManager(sap);
             sam.setAuthenticationProvider(sap);
 
             SVNCommitClient commitClient = new SVNCommitClient(sam, null);
