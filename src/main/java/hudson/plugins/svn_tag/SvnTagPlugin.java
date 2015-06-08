@@ -6,11 +6,15 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Hudson;
 import hudson.model.BuildListener;
 import hudson.model.Result;
+import hudson.scm.SCM;
 import hudson.scm.SubversionSCM;
+
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
+import org.jenkinsci.plugins.multiplescms.MultiSCM;
 import org.tmatesoft.svn.core.*;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationManager;
 import org.tmatesoft.svn.core.auth.ISVNAuthenticationProvider;
@@ -74,12 +78,32 @@ public class SvnTagPlugin {
                 abstractBuild.getProject().getRootProject();
         AbstractBuild<?, ?> rootBuild = abstractBuild.getRootBuild();
 
-        if (!(rootProject.getScm() instanceof SubversionSCM)) {
-            logger.println(Messages.NotSubversion(rootProject.getScm().toString()));
+        SCM projectSCM = rootProject.getScm();
+        
+        if (Hudson.getInstance().getPlugin("multiple-scms") != null) {
+			if (projectSCM instanceof MultiSCM) {
+	        	logger.println("Identified Multiple SCM configuration - locating SubversionSCM instance");				
+				// fetch subversion SCM from MultiSCM list of SCMs
+				List<SCM> multiSCMList = MultiSCM.class.cast(projectSCM).getConfiguredSCMs();
+				for (SCM scm : multiSCMList) {
+					if (scm instanceof SubversionSCM) {
+						projectSCM = scm;
+						break;
+					}
+				}
+				if (!(projectSCM instanceof SubversionSCM)) {
+					logger.println("No SubversionSCM instance found in Multiple SCMs configuration!");		
+				}
+            }
+        }
+        
+        if (!(projectSCM instanceof SubversionSCM)) {
+            logger.println(Messages.NotSubversion(projectSCM.toString()));
             return true;
         }
+        
 
-        SubversionSCM scm = SubversionSCM.class.cast(rootProject.getScm());
+        SubversionSCM scm = SubversionSCM.class.cast(projectSCM);
         EnvVars envVars = rootBuild.getEnvironment(buildListener);
 
         // Let SubversionSCM fill revision number.
