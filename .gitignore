@@ -6,3 +6,7 @@ work/
 *.iml
 release.properties
 pom.xml.releaseBackup
+.project
+.classpath
+.settings/
+bin/
