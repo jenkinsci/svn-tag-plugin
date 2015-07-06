@@ -6,9 +6,11 @@ import hudson.EnvVars;
 import hudson.Launcher;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
+import hudson.model.Run;
 import hudson.model.BuildListener;
 import hudson.model.Result;
 import hudson.scm.SubversionSCM;
+
 import org.apache.commons.lang.StringUtils;
 import org.codehaus.groovy.control.CompilerConfiguration;
 import org.tmatesoft.svn.core.*;
@@ -238,7 +240,7 @@ public class SvnTagPlugin {
         Map<String, Long> revisions =
                 new HashMap<String, Long>(); // module -> revision
         // read the revision file of the last build
-        File file = SubversionSCM.getRevisionFile(build);
+        File file = SubversionSCM.getRevisionFile((Run) build);
         if (!file.exists()) // nothing to compare against
         {
             return revisions;
