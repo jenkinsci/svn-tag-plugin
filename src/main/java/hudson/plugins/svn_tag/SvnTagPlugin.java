@@ -61,11 +61,11 @@ public class SvnTagPlugin {
                                   Launcher launcher,
                                   BuildListener buildListener,
                                   String tagBaseURLStr, String tagComment,
-                                  String tagDeleteComment) throws IOException, InterruptedException {
+                                  String tagDeleteComment, boolean activateOnBuildSuccess) throws IOException, InterruptedException {
         PrintStream logger = buildListener.getLogger();
         logger.println("Starting to tag");
 
-        if (Result.SUCCESS!=abstractBuild.getResult()) {
+        if ((activateOnBuildSuccess == true) && (Result.SUCCESS!=abstractBuild.getResult())) {
             logger.println(Messages.UnsuccessfulBuild());
             return true;
         }
