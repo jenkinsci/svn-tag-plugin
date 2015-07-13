@@ -45,7 +45,7 @@ public class SvnTagPublisher extends Notifier {
 
     private String tagDeleteComment = null;
 
-	private Integer waitBeforeTagging = 0;
+    private Integer waitBeforeTagging = 0;
 
     @DataBoundConstructor
     public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment, Integer waitBeforeTagging) {
@@ -53,6 +53,10 @@ public class SvnTagPublisher extends Notifier {
         this.tagComment = tagComment;
         this.tagDeleteComment = tagDeleteComment;
         this.waitBeforeTagging = waitBeforeTagging;
+    }
+
+    public SvnTagPublisher(String tagBaseURL, String tagComment, String tagDeleteComment) {
+        this(tagBaseURL, tagComment, tagDeleteComment, 0);
     }
 
     /**
@@ -118,7 +122,7 @@ public class SvnTagPublisher extends Notifier {
 
         private String tagDeleteComment;
 
-		private Integer waitBeforeTagging;
+        private Integer waitBeforeTagging;
 
         /**
          * Creates a new SvnTagDescriptorImpl object.
