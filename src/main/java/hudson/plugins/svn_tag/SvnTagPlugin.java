@@ -97,26 +97,26 @@ public class SvnTagPlugin {
             revisions = parseRevisionFile(rootBuild);
         } catch (IOException e) {
             logger.println(
-                    Messages.FailedParsingRevisionFile(e.getLocalizedMessage()));
+            		Messages.FailedParsingRevisionFile(e.getLocalizedMessage()));
             return false;
         }
 
         for (SubversionSCM.ModuleLocation ml : scm.getLocations(envVars, rootBuild)) {
-            String mlUrl;
-            URI repoURI;
-            try {
-                mlUrl = ml.getSVNURL().toString();
+			String mlUrl;
+        	URI repoURI;
+			try {
+				mlUrl = ml.getSVNURL().toString();
                 logger.println("Tagging " + mlUrl);
-                repoURI = new URI(mlUrl);
-            } catch (SVNException e) {
-                logger.println(
-                        Messages.FailedParsingRepositoryURL(ml.remote, e.getLocalizedMessage()));
-                return false;
-            } catch (URISyntaxException e) {
-                logger.println(
-                        Messages.FailedParsingRepositoryURL(ml.remote, e.getLocalizedMessage()));
-                return false;
-            }
+				repoURI = new URI(mlUrl);
+			} catch (SVNException e) {
+        		logger.println(
+        				Messages.FailedParsingRepositoryURL(ml.remote, e.getLocalizedMessage()));
+        		return false;
+			} catch (URISyntaxException e) {
+        		logger.println(
+        				Messages.FailedParsingRepositoryURL(ml.remote, e.getLocalizedMessage()));
+        		return false;
+        	}
             Long revision = revisions.get(mlUrl);
             if (revision == null) {
                 // this can happen for example if the project configuration changes since this build.
@@ -124,11 +124,11 @@ public class SvnTagPlugin {
                 continue;
             }
 
-            logger.println(Messages.RemoteModuleLocation(mlUrl+'@'+revision));
+        	logger.println(Messages.RemoteModuleLocation(mlUrl+'@'+revision));
 
             List<String> locationPathElements = Arrays.asList(StringUtils.split(mlUrl, "/"));
             String evaledTagBaseURLStr = evalGroovyExpression(
-                    envVars, tagBaseURLStr, locationPathElements);
+            		envVars, tagBaseURLStr, locationPathElements);
 
             SVNURL parsedTagBaseURL = null;
             try {
@@ -137,7 +137,7 @@ public class SvnTagPlugin {
                 logger.println(Messages.TagBaseURL(parsedTagBaseURL.toString()));
             } catch (SVNException e) {
                 logger.println(Messages.FailedParsingTagBaseURL(
-                           evaledTagBaseURLStr, e.getLocalizedMessage()));
+           				evaledTagBaseURLStr, e.getLocalizedMessage()));
             }
 
             ISVNAuthenticationProvider sap = scm.createAuthenticationProvider(rootProject, ml);
@@ -154,7 +154,7 @@ public class SvnTagPlugin {
             SVNCommitClient commitClient = new SVNCommitClient(sam, null);
             try {
                 String evalDeleteComment = evalGroovyExpression(
-                        envVars, tagDeleteComment, locationPathElements);
+                		envVars, tagDeleteComment, locationPathElements);
                 SVNCommitInfo deleteInfo =
                         commitClient.doDelete(new SVNURL[]{parsedTagBaseURL},
                                 evalDeleteComment);
@@ -170,7 +170,8 @@ public class SvnTagPlugin {
                 logger.println(Messages.NoOldTag(evaledTagBaseURLStr));
             }
 
-            if(null != waitBeforeTagging && waitBeforeTagging > 0 ) {
+            if(null != waitBeforeTagging && waitBeforeTagging > 0 )
+            {
                 logger.println(Messages.WaitBeforeTagging(waitBeforeTagging));
                 Thread.sleep(waitBeforeTagging*1000);
             }
@@ -186,7 +187,7 @@ public class SvnTagPlugin {
                 SVNCommitInfo commitInfo =
                         copyClient.doCopy(new SVNCopySource[] {
                                     new SVNCopySource(rev, rev, 
-                                            SVNURL.parseURIEncoded(mlUrl)) },
+                                    		SVNURL.parseURIEncoded(mlUrl)) },
                                 parsedTagBaseURL, false,
                                 true, false, evalComment, new SVNProperties());
                 SVNErrorMessage errorMsg = commitInfo.getErrorMessage();
@@ -259,12 +260,12 @@ public class SvnTagPlugin {
                     continue;   // invalid line?
                 }
                 try {
-                    revisions.put(SVNURL.parseURIEncoded(line.substring(0, index)).toString(),
-                            Long.parseLong(line.substring(index + 1)));
+                	revisions.put(SVNURL.parseURIEncoded(line.substring(0, index)).toString(),
+                			Long.parseLong(line.substring(index + 1)));
                 } catch (NumberFormatException e) {
                     // perhaps a corrupted line. ignore
                 } catch(SVNException e) {
-                    // perhaps a corrupted line. ignore
+                	// perhaps a corrupted line. ignore
                 }
             }
         } finally {
