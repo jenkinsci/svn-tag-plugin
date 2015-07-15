@@ -76,6 +76,11 @@ public class SvnTagPublisher extends Notifier {
         return this.tagDeleteComment;
     }
 
+    /**
+     * Returns how many seconds to wait before tagging
+     * 
+     * @return how many seconds to wait before tagging
+     */
     public int getWaitBeforeTagging() {
         return this.waitBeforeTagging;
     }
@@ -235,14 +240,30 @@ public class SvnTagPublisher extends Notifier {
             return true;
         }
 
+        /**
+         * Returns how many seconds to wait before tagging
+         * 
+         * @return how many seconds to wait before tagging
+         */
         public int getWaitBeforeTagging() {
             return waitBeforeTagging;
         }
 
+        /**
+         * Sets how many seconds to wait before tagging
+         * 
+         * @param waitBeforeTagging
+         */
         public void setWaitBeforeTagging(int waitBeforeTagging) {
             this.waitBeforeTagging = waitBeforeTagging;
         }
 
+        /**
+         * Validate WaitBeforeTagging parameter - value should be numeric
+         * 
+         * @param waitBeforeTagging
+         * @return
+         */
         public FormValidation doCheckWaitBeforeTagging(@QueryParameter final String waitBeforeTagging) {
             try {
                 Integer.parseInt(waitBeforeTagging);

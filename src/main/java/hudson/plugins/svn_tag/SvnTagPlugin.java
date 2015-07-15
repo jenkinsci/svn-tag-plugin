@@ -49,6 +49,8 @@ public class SvnTagPlugin {
      * @param buildListener build listener
      * @param tagBaseURLStr tag base URL string
      * @param tagComment    tag comment
+     * @param tagDeleteComment tag delete comment
+     * @param waitBeforeTagging wait time before tagging in seconds
      * @return true if the operation was successful
      * @throws InterruptedException 
      * @throws IOException 
