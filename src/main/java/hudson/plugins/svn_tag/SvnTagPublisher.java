@@ -266,7 +266,10 @@ public class SvnTagPublisher extends Notifier {
          */
         public FormValidation doCheckWaitBeforeTagging(@QueryParameter final String waitBeforeTagging) {
             try {
-                Integer.parseInt(waitBeforeTagging);
+                int value = Integer.parseInt(waitBeforeTagging);
+                if(value < 0) {
+                    return FormValidation.error(Messages.NegativeWaitBeforeTagging());
+                }
                 return FormValidation.ok();
             } catch (NumberFormatException e) {
                 return FormValidation.error(Messages.BadWaitBeforeTagging(e.getMessage()));
