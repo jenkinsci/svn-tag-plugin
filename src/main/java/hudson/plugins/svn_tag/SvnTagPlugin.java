@@ -51,6 +51,8 @@ public class SvnTagPlugin {
      * @param buildListener build listener
      * @param tagBaseURLStr tag base URL string
      * @param tagComment    tag comment
+     * @param tagDeleteComment tag delete comment
+     * @param waitBeforeTagging wait time before tagging in seconds
      * @return true if the operation was successful
      * @throws InterruptedException 
      * @throws IOException 
@@ -61,7 +63,8 @@ public class SvnTagPlugin {
                                   Launcher launcher,
                                   BuildListener buildListener,
                                   String tagBaseURLStr, String tagComment,
-                                  String tagDeleteComment) throws IOException, InterruptedException {
+                                  String tagDeleteComment, int waitBeforeTagging)
+                                          throws IOException, InterruptedException {
         PrintStream logger = buildListener.getLogger();
         logger.println("Starting to tag");
 
@@ -169,6 +172,11 @@ public class SvnTagPlugin {
 
             } catch (SVNException e) {
                 logger.println(Messages.NoOldTag(evaledTagBaseURLStr));
+            }
+
+            if(waitBeforeTagging > 0 ) {
+                logger.println(Messages.WaitBeforeTagging(waitBeforeTagging));
+                Thread.sleep(waitBeforeTagging*1000);
             }
 
             SVNCopyClient copyClient = new SVNCopyClient(sam, null);
