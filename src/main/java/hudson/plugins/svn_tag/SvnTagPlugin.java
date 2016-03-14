@@ -85,7 +85,9 @@ public class SvnTagPlugin {
         }
 
         SubversionSCM scm = SubversionSCM.class.cast(rootProject.getScm());
-        EnvVars envVars = rootBuild.getEnvironment(buildListener);
+        EnvVars envVars = abstractBuild.getEnvironment(buildListener);
+        EnvVars rootVars = rootBuild.getEnvironment(buildListener);
+        envVars.putAll(rootVars);
 
         // Let SubversionSCM fill revision number.
         // It is guaranteed for getBuilds() return the latest build (i.e.
